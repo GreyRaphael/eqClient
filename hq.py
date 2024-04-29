@@ -119,31 +119,31 @@ def tick_worker(q: Queue, year_month: int, output_dir: str):
         pl.read_ndjson(
             mem_file,
             schema={
-                "0": pl.Utf8,  # secucode char[16]
+                "0": pl.Utf8,  # code char[16]
                 "3": pl.Int32,  # date int32
                 "4": pl.Int32,  # time int32
-                "100": pl.Int32,  # preclose int32
-                "101": pl.Int32,  # open int32
-                # "102": pl.Int32,  # high int32
-                # "103": pl.Int32,  # low int32
-                "104": pl.Int32,  # last int32
-                "108": pl.List(pl.Int32),  # ask_prices int32[10]
-                "109": pl.List(pl.Int32),  # ask_volumes int32[10]
-                "110": pl.List(pl.Int32),  # bid_prices int32[10]
-                "111": pl.List(pl.Int32),  # bid_volumes int32[10]
-                "112": pl.Int32,  # num_trades int32
+                "100": pl.Int64,  # preclose Int64
+                "101": pl.Int64,  # open Int64
+                # "102": pl.Int64,  # high Int64
+                # "103": pl.Int64,  # low Int64
+                "104": pl.Int64,  # last Int64
+                "108": pl.List(pl.Int64),  # ask_prices Int64[10]
+                "109": pl.List(pl.Int64),  # ask_volumes Int64[10]
+                "110": pl.List(pl.Int64),  # bid_prices Int64[10]
+                "111": pl.List(pl.Int64),  # bid_volumes Int64[10]
+                "112": pl.Int64,  # num_trades Int64
                 "113": pl.Int64,  # volume int64
-                "114": pl.Float64,  # amount float64
+                "114": pl.Int64,  # amount Int64
                 "115": pl.Int64,  # total_bid_volume int64
-                "116": pl.Int32,  # bid_avg_price int32
+                "116": pl.Int64,  # bid_avg_price Int64
                 "118": pl.Int64,  # total_ask_volume int64
-                "119": pl.Int32,  # ask_avg_price int32
-                # "123": pl.Int32,  # high_limit int32, since 2018
-                # "124": pl.Int32,  # low_limit int32, since 2018
+                "119": pl.Int64,  # ask_avg_price Int64
+                # "123": pl.Int64,  # high_limit Int64, since 2018
+                # "124": pl.Int64,  # low_limit Int64, since 2018
             },
         ).rename(
             {
-                "0": "secucode",
+                "0": "code",
                 "3": "date",
                 "4": "time",
                 "100": "preclose",
