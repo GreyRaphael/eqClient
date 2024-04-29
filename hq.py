@@ -108,8 +108,8 @@ def download_kl1m(line: str, year: int, output_dir: str):
     logger.info("hq_app disconnect from server.")
 
 
-def tick_worker(q: Queue, year_month: int, output_dir: str):
-    os.makedirs(f"{output_dir}/{year_month}", exist_ok=True)
+def tick_worker(q: Queue, target_date: int, output_dir: str):
+    os.makedirs(f"{output_dir}/{target_date}", exist_ok=True)
     count = 0
     while True:
         quotes = q.get()
@@ -165,47 +165,76 @@ def tick_worker(q: Queue, year_month: int, output_dir: str):
                 # "123": "high_limit",
                 # "124": "low_limit",
             }
-        ).write_parquet(f"{output_dir}/{year_month}/{count:08d}.parquet")
+        ).write_parquet(f"{output_dir}/{target_date}/{count:08d}.parquet")
         q.task_done()
         logger.debug(f"===>finish {len(quotes)} quotes")
 
 
-def download_tick(line: str, year_month: int, output_dir: str):
+def download_tick(line: str, target_date: int, output_dir: str):
     q = Queue(maxsize=1024)
     hq_app = HistoryApp(q)
     hq_app.start()
-    threading.Thread(target=tick_worker, args=(q, year_month, output_dir), daemon=True).start()
+    threading.Thread(target=tick_worker, args=(q, target_date, output_dir), daemon=True).start()
 
     hq_app.get(
         line=line,
-        startDate=year_month * 100 + 1,
+        startDate=target_date,
         startTime=0,
-        endDate=year_month * 100 + 31,
+        endDate=target_date,
         endTime=0,
         rate=-1,  # unsorted
     )
     hq_app.wait()
     q.join()
-    logger.info(f"hq_app finish write {year_month}")
+    logger.info(f"hq_app finish write {target_date}")
     hq_app.stop()
     logger.info("hq_app disconnect from server.")
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="kl1min downloader")
-    parser.add_argument("--yr-start", type=int, required=True, help="start year, 2021")
-    parser.add_argument("--yr-end", type=int, required=True, help="end year, 2023")
-    parser.add_argument("--etf", action="store_true", help="flag, if set 'etf' else 'stocks'")
-    args = parser.parse_args()
-
+def run_kl1m_downloader(args):
     if args.etf:
         line = "shkl:kl1m:@510.*|@511.*|@512.*|@513.*|@515.*|@516.*|@517.*|@518.*|@560.*|@561.*|@562.*|@563.*|@588.*+szkl:kl1m:@159.*"
-        out_dir = "etf"
+        out_dir = "kl1m/etf"
     else:
         line = "shkl:kl1m:@60.*|@68.*+szkl:kl1m:@00.*|@30.*"
-        out_dir = "stocks"
+        out_dir = "kl1m/stocks"
 
     for year_int in range(args.yr_start, args.yr_end + 1):
         logger.info(f"start {year_int}")
         download_kl1m(line, year_int, output_dir=out_dir)
         logger.info(f"finish {year_int}")
+
+
+def run_tick_downloader(args):
+    if args.etf:
+        line = "shkl:kl1m:@510.*|@511.*|@512.*|@513.*|@515.*|@516.*|@517.*|@518.*|@560.*|@561.*|@562.*|@563.*|@588.*+szkl:kl1m:@159.*"
+        out_dir = "tick/etf"
+    else:
+        line = "shkl:kl1m:@60.*|@68.*+szkl:kl1m:@00.*|@30.*"
+        out_dir = "tick/stocks"
+
+    for day in range(1, 32):  # to be tested
+        target_date = args.year * 10000 + args.mon * 100 + day  # 20240401
+        logger.info(f"start {target_date}")
+        download_tick(line, target_date, output_dir=out_dir)
+        logger.info(f"finish {target_date}")
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="history quotes downloader")
+    subparsers = parser.add_subparsers(title="subcommands", required=True)
+
+    kl1m_parser = subparsers.add_parser("kl1m", help="download kl1m")
+    kl1m_parser.add_argument("--yr-start", type=int, required=True, help="start year, 2021")
+    kl1m_parser.add_argument("--yr-end", type=int, required=True, help="end year, 2023")
+    kl1m_parser.add_argument("--etf", action="store_true", help="flag, if set 'etf' else 'stocks'")
+    kl1m_parser.set_defaults(func=run_kl1m_downloader)
+
+    tick_parser = subparsers.add_parser("tick", help="download tick")
+    tick_parser.add_argument("--yr", type=int, required=True, help="target year")
+    tick_parser.add_argument("--mon", type=int, required=True, help="target month")
+    tick_parser.add_argument("--etf", action="store_true", help="flag, if set 'etf' else 'stocks'")
+    tick_parser.set_defaults(func=run_tick_downloader)
+
+    args = parser.parse_args()
+    args.func(args)
