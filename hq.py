@@ -108,6 +108,89 @@ def download_kl1m(line: str, year: int, output_dir: str):
     logger.info("hq_app disconnect from server.")
 
 
+def tick_worker(q: Queue, year_month: int, output_dir: str):
+    os.makedirs(f"{output_dir}/{year_month}", exist_ok=True)
+    count = 0
+    while True:
+        quotes = q.get()
+        count += 1
+
+        mem_file = io.StringIO("\n".join(quotes))
+        pl.read_ndjson(
+            mem_file,
+            schema={
+                "0": pl.Utf8,  # secucode char[16]
+                "3": pl.Int32,  # date int32
+                "4": pl.Int32,  # time int32
+                "100": pl.Int32,  # preclose int32
+                "101": pl.Int32,  # open int32
+                # "102": pl.Int32,  # high int32
+                # "103": pl.Int32,  # low int32
+                "104": pl.Int32,  # last int32
+                "108": pl.List(pl.Int32),  # ask_prices int32[10]
+                "109": pl.List(pl.Int32),  # ask_volumes int32[10]
+                "110": pl.List(pl.Int32),  # bid_prices int32[10]
+                "111": pl.List(pl.Int32),  # bid_volumes int32[10]
+                "112": pl.Int32,  # num_trades int32
+                "113": pl.Int64,  # volume int64
+                "114": pl.Float64,  # amount float64
+                "115": pl.Int64,  # total_bid_volume int64
+                "116": pl.Int32,  # bid_avg_price int32
+                "118": pl.Int64,  # total_ask_volume int64
+                "119": pl.Int32,  # ask_avg_price int32
+                # "123": pl.Int32,  # high_limit int32, since 2018
+                # "124": pl.Int32,  # low_limit int32, since 2018
+            },
+        ).rename(
+            {
+                "0": "secucode",
+                "3": "date",
+                "4": "time",
+                "100": "preclose",
+                "101": "open",
+                # "102": "high",
+                # "103": "low",
+                "104": "last",
+                "108": "ask_prices",
+                "109": "ask_volumes",
+                "110": "bid_prices",
+                "111": "bid_volumes",
+                "112": "num_trades",
+                "113": "volume",
+                "114": "amount",
+                "115": "total_bid_volume",
+                "116": "bid_avg_price",
+                "118": "total_ask_volume",
+                "119": "ask_avg_price",
+                # "123": "high_limit",
+                # "124": "low_limit",
+            }
+        ).write_parquet(f"{output_dir}/{year_month}/{count:08d}.parquet")
+        q.task_done()
+        logger.debug(f"===>finish {len(quotes)} quotes")
+
+
+def download_tick(line: str, year_month: int, output_dir: str):
+    q = Queue(maxsize=1024)
+    hq_app = HistoryApp(q)
+    hq_app.start()
+    threading.Thread(target=tick_worker, args=(q, year_month, output_dir), daemon=True).start()
+
+    hq_app.get(
+        line=line,
+        startDate=year_month * 100 + 1,
+        startTime=0,
+        endDate=year_month * 100 + 31,
+        endTime=0,
+        rate=-1,  # unsorted
+    )
+    hq_app.wait()
+    q.join()
+    logger.info(f"hq_app finish write {year_month}")
+    hq_app.stop()
+    logger.info("hq_app disconnect from server.")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="kl1min downloader")
     parser.add_argument("--yr-start", type=int, required=True, help="start year, 2021")
