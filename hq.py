@@ -22,7 +22,7 @@ class HistoryApp(eqapi.HqApplication):
         parser = configparser.ConfigParser()
         parser.optionxform = str  # 保持大小写
         parser.read(configfile)
-        conf = parser._sections["DEFAULT"]  # key-value OrderDict
+        conf = parser._sections["default"]  # key-value OrderDict
 
         setting = eqapi.EqSetting()
         setting.ip = conf["ip"]
