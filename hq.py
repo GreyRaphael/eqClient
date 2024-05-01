@@ -214,7 +214,7 @@ def run_tick_downloader(args):
         out_dir = "tick/stocks"
 
     for day in range(1, 32):  # to be tested
-        target_date = args.year * 10000 + args.mon * 100 + day  # 20240401
+        target_date = args.ym * 100 + day  # 20240401
         logger.info(f"start {target_date}")
         download_tick(line, target_date, output_dir=out_dir)
         logger.info(f"finish {target_date}")
@@ -231,8 +231,7 @@ if __name__ == "__main__":
     kl1m_parser.set_defaults(func=run_kl1m_downloader)
 
     tick_parser = subparsers.add_parser("tick", help="download tick")
-    tick_parser.add_argument("--yr", type=int, required=True, help="target year")
-    tick_parser.add_argument("--mon", type=int, required=True, help="target month")
+    tick_parser.add_argument("--ym", type=int, required=True, help="target year month, 202401")
     tick_parser.add_argument("--etf", action="store_true", help="flag, if set 'etf' else 'stocks'")
     tick_parser.set_defaults(func=run_tick_downloader)
 
