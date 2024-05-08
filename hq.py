@@ -91,7 +91,7 @@ def kl1m_worker(q: Queue, target_date: int, output_dir: str):
 
 
 def download_kl1m(line: str, target_date: int, output_dir: str):
-    q = Queue(maxsize=1024)
+    q = Queue(maxsize=256)
     hq_app = HistoryApp(q)
     hq_app.start()
     threading.Thread(target=kl1m_worker, args=(q, target_date, output_dir), daemon=True).start()
@@ -174,7 +174,7 @@ def tick_worker(q: Queue, target_date: int, output_dir: str):
 
 
 def download_tick(line: str, target_date: int, output_dir: str):
-    q = Queue(maxsize=1024)
+    q = Queue(maxsize=256)
     hq_app = HistoryApp(q)
     hq_app.start()
     threading.Thread(target=tick_worker, args=(q, target_date, output_dir), daemon=True).start()
