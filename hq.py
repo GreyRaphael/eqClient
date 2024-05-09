@@ -115,8 +115,8 @@ def download_kl1m(line: str, year: int, output_dir: str):
     logger.info(f"finish {year}")
 
 
-def tick_worker(q: Queue, target_date: int, output_dir: str):
-    os.makedirs(f"{output_dir}/{target_date}", exist_ok=True)
+def tick_worker(q: Queue, year_batch: int, output_dir: str):
+    os.makedirs(f"{output_dir}/{year_batch}", exist_ok=True)
     count = 0
     while True:
         quotes = q.get()
@@ -172,30 +172,42 @@ def tick_worker(q: Queue, target_date: int, output_dir: str):
                 # "123": "high_limit",
                 # "124": "low_limit",
             }
-        ).write_parquet(f"{output_dir}/{target_date}/{count:08d}.parquet")
+        ).write_parquet(f"{output_dir}/{year_batch}/{count:08d}.parquet")
         q.task_done()
         logger.debug(f"===>finish {len(quotes)} quotes")
 
 
-def download_tick(line: str, target_date: int, output_dir: str):
+def gen_year_batchs(year: int) -> dict:
+    with open(f"calendar/{year}.json", "r") as file:
+        date_ints = json.load(file)
+    date_num = len(date_ints)
+    return {year * 100 + i // 10 + 1: date_ints[i : i + 10] for i in range(0, date_num, 10)}
+
+
+def download_tick(line: str, year_batch: int, output_dir: str):
+    logger.info(f"start {year_batch}")
     q = Queue(maxsize=1024)
     hq_app = HistoryApp(q)
     hq_app.start()
-    threading.Thread(target=tick_worker, args=(q, target_date, output_dir), daemon=True).start()
+    threading.Thread(target=tick_worker, args=(q, year_batch, output_dir), daemon=True).start()
 
-    hq_app.get(
-        line=line,
-        startDate=target_date,
-        startTime=0,
-        endDate=target_date,
-        endTime=0,
-        rate=-1,  # unsorted
-    )
+    dates_batches = gen_year_batchs(year=year_batch // 100)
+    for target_date in dates_batches.get(year_batch):
+        hq_app.get(
+            line=line,
+            startDate=target_date,
+            startTime=92500000,
+            endDate=target_date,
+            endTime=150100000,
+            rate=-1,  # unsorted
+        )
     hq_app.wait()
+    logger.debug(f"hq_app finish downloading {year_batch}")
     q.join()
-    logger.info(f"hq_app finish write {target_date}")
+    logger.debug(f"tick_worker finish processing {year_batch}")
     hq_app.stop()
     logger.info("hq_app disconnect from server.")
+    logger.info(f"finish {year_batch}")
 
 
 def run_kl1m_downloader(args):
@@ -218,11 +230,7 @@ def run_tick_downloader(args):
         line = "shkl:kl1m:@60.*|@68.*+szkl:kl1m:@00.*|@30.*"
         out_dir = "tick/stocks"
 
-    for day in range(1, 32):  # to be tested
-        target_date = args.ym * 100 + day  # 20240401
-        logger.info(f"start {target_date}")
-        download_tick(line, target_date, output_dir=out_dir)
-        logger.info(f"finish {target_date}")
+    download_tick(line, args.yb, output_dir=out_dir)
 
 
 if __name__ == "__main__":
@@ -236,7 +244,7 @@ if __name__ == "__main__":
     kl1m_parser.set_defaults(func=run_kl1m_downloader)
 
     tick_parser = subparsers.add_parser("tick", help="download tick")
-    tick_parser.add_argument("--ym", type=int, required=True, help="target year month, 202401")
+    tick_parser.add_argument("--yb", type=int, required=True, help="target year batch, 202415")
     tick_parser.add_argument("--etf", action="store_true", help="flag, if set 'etf' else 'stocks'")
     tick_parser.set_defaults(func=run_tick_downloader)
 
