@@ -5,7 +5,6 @@ from queue import Queue
 import configparser
 import logging
 import argparse
-import json
 import eqapi
 import polars as pl
 
@@ -48,10 +47,8 @@ class HistoryApp(eqapi.HqApplication):
         print(msg)
 
 
-def kl1m_worker(q: Queue, target_date: int, output_dir: str):
-    year = target_date // 10000
-    output_loc = f"{output_dir}/{year}/{target_date}"
-    os.makedirs(output_loc, exist_ok=True)
+def kl1m_worker(q: Queue, year: int, output_dir: str):
+    os.makedirs(f"{output_dir}/{year}", exist_ok=True)
     count = 0
     while True:
         quotes = q.get()
@@ -85,28 +82,28 @@ def kl1m_worker(q: Queue, target_date: int, output_dir: str):
                 "113": "volume",
                 "114": "amount",
             }
-        ).write_parquet(f"{output_loc}/{count:08d}.parquet")
+        ).write_parquet(f"{output_dir}/{year}/{count:08d}.parquet")
         q.task_done()
         logger.debug(f"===>finish {len(quotes)} quotes")
 
 
-def download_kl1m(line: str, target_date: int, output_dir: str):
+def download_kl1m(line: str, year: int, output_dir: str):
     q = Queue(maxsize=1024)
     hq_app = HistoryApp(q)
     hq_app.start()
-    threading.Thread(target=kl1m_worker, args=(q, target_date, output_dir), daemon=True).start()
+    threading.Thread(target=kl1m_worker, args=(q, year, output_dir), daemon=True).start()
 
     hq_app.get(
         line=line,
-        startDate=target_date,
-        startTime=92500000,
-        endDate=target_date,
-        endTime=150000000,
+        startDate=year * 10000 + 101,
+        startTime=0,
+        endDate=year * 10000 + 1231,
+        endTime=0,
         rate=-1,  # unsorted
     )
     hq_app.wait()
     q.join()
-    logger.info(f"hq_app finish write {target_date}")
+    logger.info(f"hq_app finish write {year}")
     hq_app.stop()
     logger.info("hq_app disconnect from server.")
 
@@ -204,10 +201,7 @@ def run_kl1m_downloader(args):
 
     for year_int in range(args.yr_start, args.yr_end + 1):
         logger.info(f"start {year_int}")
-        with open(f"calendar/{year_int}.json", "r") as file:
-            date_ints = json.load(file)
-        for target_date in date_ints:
-            download_kl1m(line, target_date, output_dir=out_dir)
+        download_kl1m(line, year_int, output_dir=out_dir)
         logger.info(f"finish {year_int}")
 
 
