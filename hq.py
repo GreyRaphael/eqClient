@@ -186,7 +186,7 @@ def gen_year_batchs(year: int) -> dict:
 
 def download_tick(line: str, year_batch: int, output_dir: str):
     logger.info(f"start {year_batch}")
-    q = Queue(maxsize=128)
+    q = Queue(maxsize=64)
     hq_app = HistoryApp(q)
     hq_app.start()
     threading.Thread(target=tick_worker, args=(q, year_batch, output_dir), daemon=True).start()
@@ -224,10 +224,10 @@ def run_kl1m_downloader(args):
 
 def run_tick_downloader(args):
     if args.etf:
-        line = "shkl:kl1m:@510.*|@511.*|@512.*|@513.*|@515.*|@516.*|@517.*|@518.*|@560.*|@561.*|@562.*|@563.*|@588.*+szkl:kl1m:@159.*"
+        line = "shl2:tick:@510.*|@511.*|@512.*|@513.*|@515.*|@516.*|@517.*|@518.*|@560.*|@561.*|@562.*|@563.*|@588.*+szl2:tick:@159.*"
         out_dir = "tick/etf"
     else:
-        line = "shkl:kl1m:@60.*|@68.*+szkl:kl1m:@00.*|@30.*"
+        line = "shl2:tick:@60.*|@68.*+szl2:tick:@00.*|@30.*"
         out_dir = "tick/stocks"
 
     download_tick(line, args.yb, output_dir=out_dir)
