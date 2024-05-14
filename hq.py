@@ -90,7 +90,7 @@ def kl1m_worker(q: Queue, year: int, output_dir: str):
 
 def download_kl1m(line: str, year: int, output_dir: str):
     logger.info(f"start {year}")
-    q = Queue(maxsize=128)
+    q = Queue(maxsize=64)
     hq_app = HistoryApp(q)
     hq_app.start()
     threading.Thread(target=kl1m_worker, args=(q, year, output_dir), daemon=True).start()
@@ -186,7 +186,7 @@ def gen_year_batchs(year: int) -> dict:
 
 def download_tick(line: str, year_batch: int, output_dir: str):
     logger.info(f"start {year_batch}")
-    q = Queue(maxsize=64)
+    q = Queue(maxsize=32)
     hq_app = HistoryApp(q)
     hq_app.start()
     threading.Thread(target=tick_worker, args=(q, year_batch, output_dir), daemon=True).start()
@@ -230,7 +230,8 @@ def run_tick_downloader(args):
         line = "shl2:tick:@60.*|@68.*+szl2:tick:@00.*|@30.*"
         out_dir = "tick/stocks"
 
-    download_tick(line, args.yb, output_dir=out_dir)
+    for year_batch in range(args.yb_start, args.yb_end + 1):
+        download_tick(line, year_batch, output_dir=out_dir)
 
 
 if __name__ == "__main__":
@@ -244,7 +245,8 @@ if __name__ == "__main__":
     kl1m_parser.set_defaults(func=run_kl1m_downloader)
 
     tick_parser = subparsers.add_parser("tick", help="download tick")
-    tick_parser.add_argument("--yb", type=int, required=True, help="target year batch, 202415")
+    tick_parser.add_argument("--yb-start", type=int, required=True, help="start year batch, 202401")
+    tick_parser.add_argument("--yb-end", type=int, required=True, help="end year batch, 202415")
     tick_parser.add_argument("--etf", action="store_true", help="flag, if set 'etf' else 'stocks'")
     tick_parser.set_defaults(func=run_tick_downloader)
 
