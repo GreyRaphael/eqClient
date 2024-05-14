@@ -90,7 +90,7 @@ def kl1m_worker(q: Queue, year: int, output_dir: str):
 
 def download_kl1m(line: str, year: int, output_dir: str):
     logger.info(f"start {year}")
-    q = Queue(maxsize=1024)
+    q = Queue(maxsize=128)
     hq_app = HistoryApp(q)
     hq_app.start()
     threading.Thread(target=kl1m_worker, args=(q, year, output_dir), daemon=True).start()
@@ -186,7 +186,7 @@ def gen_year_batchs(year: int) -> dict:
 
 def download_tick(line: str, year_batch: int, output_dir: str):
     logger.info(f"start {year_batch}")
-    q = Queue(maxsize=1024)
+    q = Queue(maxsize=128)
     hq_app = HistoryApp(q)
     hq_app.start()
     threading.Thread(target=tick_worker, args=(q, year_batch, output_dir), daemon=True).start()
