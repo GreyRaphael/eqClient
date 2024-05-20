@@ -192,7 +192,7 @@ def download_tick(line: str, year_batch: int, output_dir: str):
     threading.Thread(target=tick_worker, args=(q, year_batch, output_dir), daemon=True).start()
 
     dates_batches = gen_year_batchs(year=year_batch // 100)
-    for target_date in dates_batches.get(year_batch):
+    for target_date in dates_batches.get(year_batch) or []:
         hq_app.get(
             line=line,
             startDate=target_date,
