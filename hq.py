@@ -123,7 +123,7 @@ def tick_worker(q: Queue, year_batch: int, output_dir: str):
         count += 1
 
         mem_file = io.StringIO("\n".join(quotes))
-        pl.read_ndjson(
+        pl.scan_ndjson(
             mem_file,
             schema={
                 "0": pl.Utf8,  # code char[16]
@@ -148,6 +148,7 @@ def tick_worker(q: Queue, year_batch: int, output_dir: str):
                 # "123": pl.Int32,  # high_limit Int64, since 2018
                 # "124": pl.Int32,  # low_limit Int64, since 2018
             },
+            infer_schema_length=1024,
         ).rename(
             {
                 "0": "code",
@@ -172,7 +173,7 @@ def tick_worker(q: Queue, year_batch: int, output_dir: str):
                 # "123": "high_limit",
                 # "124": "low_limit",
             }
-        ).write_parquet(f"{output_dir}/{year_batch}/{count:08d}.parquet")
+        ).collect().write_parquet(f"{output_dir}/{year_batch}/{count:08d}.parquet")
         q.task_done()
         logger.debug(f"===>finish {len(quotes)} quotes")
 
