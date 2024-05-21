@@ -223,6 +223,15 @@ def run_kl1m_downloader(args):
         download_kl1m(line, year_int, output_dir=out_dir)
 
 
+def gen_ym_list(ym_start: int, ym_end: int) -> list:
+    year_start = ym_start // 100
+    year_end = ym_end // 100
+    ym_list = [year * 100 + month for year in range(year_start, year_end + 1) for month in range(1, 13)]
+    begin_idx = ym_list.index(ym_start)
+    end_idx = ym_list.index(ym_end)
+    return ym_list[begin_idx : end_idx + 1]
+
+
 def run_tick_downloader(args):
     if args.etf:
         line = "shl2:tick:@510.*|@511.*|@512.*|@513.*|@515.*|@516.*|@517.*|@518.*|@560.*|@561.*|@562.*|@563.*|@588.*+szl2:tick:@159.*"
@@ -231,7 +240,7 @@ def run_tick_downloader(args):
         line = "shl2:tick:@60.*|@68.*+szl2:tick:@00.*|@30.*"
         out_dir = "tick/stocks"
 
-    for year_month in range(args.ym_start, args.ym_end + 1):
+    for year_month in gen_ym_list(args.ym_start, args.ym_end):
         download_tick(line, year_month, output_dir=out_dir)
 
 
@@ -246,7 +255,7 @@ if __name__ == "__main__":
     kl1m_parser.set_defaults(func=run_kl1m_downloader)
 
     tick_parser = subparsers.add_parser("tick", help="download tick")
-    tick_parser.add_argument("--ym-start", type=int, required=True, help="start month batch, 202401")
+    tick_parser.add_argument("--ym-start", type=int, required=True, help="start month batch, 202301")
     tick_parser.add_argument("--ym-end", type=int, required=True, help="end month batch, 202412")
     tick_parser.add_argument("--etf", action="store_true", help="flag, if set 'etf' else 'stocks'")
     tick_parser.set_defaults(func=run_tick_downloader)
