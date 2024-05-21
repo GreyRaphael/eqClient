@@ -227,9 +227,7 @@ def gen_ym_list(ym_start: int, ym_end: int) -> list:
     year_start = ym_start // 100
     year_end = ym_end // 100
     ym_list = [year * 100 + month for year in range(year_start, year_end + 1) for month in range(1, 13)]
-    begin_idx = ym_list.index(ym_start)
-    end_idx = ym_list.index(ym_end)
-    return ym_list[begin_idx : end_idx + 1]
+    return [ym for ym in ym_list if ym_start <= ym <= ym_end]
 
 
 def run_tick_downloader(args):
