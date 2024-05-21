@@ -179,13 +179,6 @@ def tick_worker(q: Queue, year_month: int, output_dir: str):
         logger.debug(f"===>finish {len(quotes)} quotes")
 
 
-def gen_year_batchs(year: int) -> dict:
-    with open(f"calendar/{year}.json", "r") as file:
-        date_ints = json.load(file)
-    date_num = len(date_ints)
-    return {year * 100 + i // 10 + 1: date_ints[i : i + 10] for i in range(0, date_num, 10)}
-
-
 def get_month_dates(year_month: int) -> list:
     year = year_month // 100
     with open(f"calendar/{year}.json", "r") as file:
