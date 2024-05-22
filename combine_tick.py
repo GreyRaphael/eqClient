@@ -31,7 +31,7 @@ def combiner_ym(year_month: int, in_dir: str, output_dir: str):
         .sort(["code", "dt"])
         .collect()
     )
-    print(df.null_count().select("code", "dt", "preclose", "open", "last", "num_trades", "volume", "tot_av", "tot_bv", "amount", "avg_ap", "avg_bp").to_dicts())
+    print(df.null_count().select("code", "dt", "preclose", "open", "last", "avg_ap", "avg_bp").to_dicts())
 
     os.makedirs(output_dir, exist_ok=True)
     out_file = f"{output_dir}/{year_month}.ipc"
