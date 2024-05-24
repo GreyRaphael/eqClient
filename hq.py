@@ -69,35 +69,35 @@ def kl1m_worker(q: Queue, year: int, output_dir: str):
         quotes = q.get()
         count += 1
 
-        mem_file = io.StringIO("\n".join(quotes))
-        pl.read_ndjson(
-            mem_file,
-            schema={
-                "0": pl.Utf8,
-                "3": pl.Int32,
-                "4": pl.Int32,
-                "101": pl.Int32,  # open, int64
-                "102": pl.Int32,  # high, int64
-                "103": pl.Int32,  # low, int64
-                "104": pl.Int32,  # last, int64
-                "112": pl.Int32,  # num_trades, int64
-                "113": pl.Int64,
-                "114": pl.Int64,
-            },
-        ).rename(
-            {
-                "0": "code",
-                "3": "date",
-                "4": "time",
-                "101": "open",
-                "102": "high",
-                "103": "low",
-                "104": "last",
-                "112": "num_trades",
-                "113": "volume",
-                "114": "amount",
-            }
-        ).write_parquet(f"{output_dir}/{year}/{count:08d}.parquet")
+        with io.StringIO("\n".join(quotes)) as mem_file:
+            pl.read_ndjson(
+                mem_file,
+                schema={
+                    "0": pl.Utf8,
+                    "3": pl.Int32,
+                    "4": pl.Int32,
+                    "101": pl.Int32,  # open, int64
+                    "102": pl.Int32,  # high, int64
+                    "103": pl.Int32,  # low, int64
+                    "104": pl.Int32,  # last, int64
+                    "112": pl.Int32,  # num_trades, int64
+                    "113": pl.Int64,
+                    "114": pl.Int64,
+                },
+            ).rename(
+                {
+                    "0": "code",
+                    "3": "date",
+                    "4": "time",
+                    "101": "open",
+                    "102": "high",
+                    "103": "low",
+                    "104": "last",
+                    "112": "num_trades",
+                    "113": "volume",
+                    "114": "amount",
+                }
+            ).write_parquet(f"{output_dir}/{year}/{count:08d}.parquet")
         q.task_done()
         hq_logger.debug(f"===>finish {len(quotes)} quotes")
 
