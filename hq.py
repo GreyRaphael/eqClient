@@ -4,13 +4,27 @@ import threading
 from queue import Queue
 import configparser
 import logging
+import datetime as dt
 import argparse
 import json
 import eqapi
 import polars as pl
 
-logger = logging.getLogger(__name__)
-logging.basicConfig(filename="history_quotes.log", format="%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(funcName)s - %(message)s", level=logging.DEBUG)
+
+def get_logger(name: str, level=logging.DEBUG, fmt="%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(funcName)s - %(message)s"):
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+
+    file_handler = logging.FileHandler(f"{dt.date.today()}_{name}.log")
+    formatter = logging.Formatter(fmt)
+    file_handler.setFormatter(formatter)
+
+    logger.addHandler(file_handler)
+    return logger
+
+
+hq_logger = get_logger("hq")
+eq_logger = get_logger("eq", fmt="")
 
 
 class HistoryApp(eqapi.HqApplication):
@@ -33,19 +47,19 @@ class HistoryApp(eqapi.HqApplication):
         return setting
 
     def onConnect(self, msg):
-        print(msg)
+        eq_logger.info(msg)
 
     def onDisconnect(self, msg):
-        print(msg)
+        eq_logger.info(msg)
 
     def onQuote(self, quotes):
         self._quotes_q.put(quotes)
 
     def onError(self, msg):
-        print(msg)
+        eq_logger.error(msg)
 
     def onLog(self, msg):
-        print(msg)
+        eq_logger.debug(msg)
 
 
 def kl1m_worker(q: Queue, year: int, output_dir: str):
@@ -85,11 +99,11 @@ def kl1m_worker(q: Queue, year: int, output_dir: str):
             }
         ).write_parquet(f"{output_dir}/{year}/{count:08d}.parquet")
         q.task_done()
-        logger.debug(f"===>finish {len(quotes)} quotes")
+        hq_logger.debug(f"===>finish {len(quotes)} quotes")
 
 
 def download_kl1m(line: str, year: int, output_dir: str):
-    logger.info(f"start {year}")
+    hq_logger.info(f"start {year}")
     q = Queue(maxsize=64)
     hq_app = HistoryApp(q)
     hq_app.start()
@@ -107,12 +121,12 @@ def download_kl1m(line: str, year: int, output_dir: str):
             rate=-1,  # unsorted
         )
     hq_app.wait()
-    logger.debug(f"hq_app finish downloading {year}")
+    hq_logger.debug(f"hq_app finish downloading {year}")
     q.join()
-    logger.debug(f"kl1m_worker finish processing {year}")
+    hq_logger.debug(f"kl1m_worker finish processing {year}")
     hq_app.stop()
-    logger.debug("hq_app disconnect from server.")
-    logger.info(f"finish {year}")
+    hq_logger.debug("hq_app disconnect from server.")
+    hq_logger.info(f"finish {year}")
 
 
 def tick_worker(q: Queue, year_month: int, output_dir: str):
@@ -176,7 +190,7 @@ def tick_worker(q: Queue, year_month: int, output_dir: str):
                 }
             ).write_parquet(f"{output_dir}/{year_month}/{count:08d}.parquet")
         q.task_done()
-        logger.debug(f"===>finish {len(quotes)} quotes")
+        hq_logger.debug(f"===>finish {len(quotes)} quotes")
 
 
 def get_month_dates(year_month: int) -> list:
@@ -187,7 +201,7 @@ def get_month_dates(year_month: int) -> list:
 
 
 def download_tick(line: str, year_month: int, output_dir: str):
-    logger.info(f"start {year_month}")
+    hq_logger.info(f"start {year_month}")
     q = Queue(maxsize=32)
     hq_app = HistoryApp(q)
     hq_app.start()
@@ -203,12 +217,12 @@ def download_tick(line: str, year_month: int, output_dir: str):
             rate=-1,  # unsorted
         )
     hq_app.wait()
-    logger.debug(f"hq_app finish downloading {year_month}")
+    hq_logger.debug(f"hq_app finish downloading {year_month}")
     q.join()
-    logger.debug(f"tick_worker finish processing {year_month}")
+    hq_logger.debug(f"tick_worker finish processing {year_month}")
     hq_app.stop()
-    logger.info("hq_app disconnect from server.")
-    logger.info(f"finish {year_month}")
+    hq_logger.info("hq_app disconnect from server.")
+    hq_logger.info(f"finish {year_month}")
 
 
 def run_kl1m_downloader(args):
