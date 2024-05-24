@@ -62,15 +62,14 @@ class HistoryApp(eqapi.HqApplication):
         eq_logger.debug(msg)
 
 
-def kl1m_worker(q: Queue, year: int, output_dir: str):
-    os.makedirs(f"{output_dir}/{year}", exist_ok=True)
+def kl1m_worker(q: Queue, output_dir: str):
     count = 0
     while True:
         quotes = q.get()
         count += 1
 
         with io.StringIO("\n".join(quotes)) as mem_file:
-            pl.read_ndjson(
+            df = pl.read_ndjson(
                 mem_file,
                 schema={
                     "0": pl.Utf8,
@@ -97,18 +96,18 @@ def kl1m_worker(q: Queue, year: int, output_dir: str):
                     "113": "volume",
                     "114": "amount",
                 }
-            ).write_parquet(f"{output_dir}/{year}/{count:08d}.parquet")
+            )
+            year = df.item(0, "date") // 10000
+            os.makedirs(f"{output_dir}/{year}", exist_ok=True)
+            df.write_parquet(f"{output_dir}/{year}/{count:08d}.parquet")
         q.task_done()
         hq_logger.debug(f"===>finish {len(quotes)} quotes")
 
 
-def download_kl1m(line: str, year: int, output_dir: str):
+def download_kl1m(line: str, year: int, q: Queue):
     hq_logger.info(f"start {year}")
-    q = Queue(maxsize=64)
     hq_app = HistoryApp(q)
     hq_app.start()
-    threading.Thread(target=kl1m_worker, args=(q, year, output_dir), daemon=True).start()
-
     with open(f"calendar/{year}.json") as file:
         date_ints = json.load(file)
     for target_date in date_ints:
@@ -122,11 +121,8 @@ def download_kl1m(line: str, year: int, output_dir: str):
         )
     hq_app.wait()
     hq_logger.debug(f"hq_app finish downloading {year}")
-    q.join()
-    hq_logger.debug(f"kl1m_worker finish processing {year}")
     hq_app.stop()
     hq_logger.debug("hq_app disconnect from server.")
-    hq_logger.info(f"finish {year}")
 
 
 def tick_worker(q: Queue, year_month: int, output_dir: str):
@@ -233,8 +229,12 @@ def run_kl1m_downloader(args):
         line = "shkl:kl1m:@60.*|@68.*+szkl:kl1m:@00.*|@30.*"
         out_dir = "kl1m/stocks"
 
+    q = Queue(maxsize=64)
+    threading.Thread(target=kl1m_worker, args=(q, out_dir), daemon=True).start()
     for year_int in range(args.yr_start, args.yr_end + 1):
-        download_kl1m(line, year_int, output_dir=out_dir)
+        download_kl1m(line, year_int, q)
+    q.join()
+    hq_logger.info("kl1m_worker finish processing.")
 
 
 def gen_ym_list(ym_start: int, ym_end: int) -> list:
