@@ -97,7 +97,7 @@ def kl1m_worker(q: Queue, output_dir: str):
                     "114": "amount",
                 }
             )
-            year = df.item(0, "date") // 10000
+            year = df.item(-1, "date") // 10000
             os.makedirs(f"{output_dir}/{year}", exist_ok=True)
             df.write_parquet(f"{output_dir}/{year}/{count:08d}.parquet")
         q.task_done()
