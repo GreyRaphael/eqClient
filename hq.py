@@ -184,7 +184,7 @@ def tick_worker(q: Queue, output_dir: str):
                     # "124": "low_limit",
                 }
             )
-            year_month = df.item(0, "date") // 100
+            year_month = df.item(-1, "date") // 100
             os.makedirs(f"{output_dir}/{year_month}", exist_ok=True)
             df.write_parquet(f"{output_dir}/{year_month}/{count:08d}.parquet")
         q.task_done()
