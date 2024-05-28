@@ -62,14 +62,15 @@ class HistoryApp(eqapi.HqApplication):
         eq_logger.debug(msg)
 
 
-def kl1m_worker(q: Queue, output_dir: str):
+def kl1m_worker(q: Queue, year: int, output_dir: str):
+    os.makedirs(f"{output_dir}/{year}", exist_ok=True)
     count = 0
     while True:
         quotes = q.get()
         count += 1
 
         with io.StringIO("\n".join(quotes)) as mem_file:
-            df = pl.read_ndjson(
+            pl.read_ndjson(
                 mem_file,
                 schema={
                     "0": pl.Utf8,
@@ -96,18 +97,18 @@ def kl1m_worker(q: Queue, output_dir: str):
                     "113": "volume",
                     "114": "amount",
                 }
-            )
-            year = df.item(-1, "date") // 10000
-            os.makedirs(f"{output_dir}/{year}", exist_ok=True)
-            df.write_parquet(f"{output_dir}/{year}/{count:08d}.parquet")
+            ).write_parquet(f"{output_dir}/{year}/{count:08d}.parquet")
         q.task_done()
         hq_logger.debug(f"===>finish {len(quotes)} quotes")
 
 
-def download_kl1m(line: str, year: int, q: Queue):
+def download_kl1m(line: str, year: int, output_dir: str):
     hq_logger.info(f"start {year}")
+    q = Queue(maxsize=64)
     hq_app = HistoryApp(q)
     hq_app.start()
+    threading.Thread(target=kl1m_worker, args=(q, year, output_dir), daemon=True).start()
+
     with open(f"calendar/{year}.json") as file:
         date_ints = json.load(file)
     for target_date in date_ints:
@@ -121,11 +122,15 @@ def download_kl1m(line: str, year: int, q: Queue):
         )
     hq_app.wait()
     hq_logger.debug(f"hq_app finish downloading {year}")
+    q.join()
+    hq_logger.debug(f"kl1m_worker finish processing {year}")
     hq_app.stop()
     hq_logger.debug("hq_app disconnect from server.")
+    hq_logger.info(f"finish {year}")
 
 
-def tick_worker(q: Queue, output_dir: str):
+def tick_worker(q: Queue, year_month: int, output_dir: str):
+    os.makedirs(f"{output_dir}/{year_month}", exist_ok=True)
     count = 0
     while True:
         quotes = q.get()
@@ -134,7 +139,7 @@ def tick_worker(q: Queue, output_dir: str):
         # sort the quotes by length, long -> short
         quotes.sort(key=len, reverse=True)
         with io.StringIO("\n".join(quotes)) as mem_file:
-            df = pl.read_ndjson(
+            pl.read_ndjson(
                 mem_file,
                 schema={
                     "0": pl.Utf8,  # code char[16]
@@ -183,10 +188,7 @@ def tick_worker(q: Queue, output_dir: str):
                     # "123": "high_limit",
                     # "124": "low_limit",
                 }
-            )
-            year_month = df.item(-1, "date") // 100
-            os.makedirs(f"{output_dir}/{year_month}", exist_ok=True)
-            df.write_parquet(f"{output_dir}/{year_month}/{count:08d}.parquet")
+            ).write_parquet(f"{output_dir}/{year_month}/{count:08d}.parquet")
         q.task_done()
         hq_logger.debug(f"===>finish {len(quotes)} quotes")
 
@@ -198,10 +200,12 @@ def get_month_dates(year_month: int) -> list:
     return [i for i in year_dates if i // 100 == year_month]
 
 
-def download_tick(line: str, year_month: int, q: Queue):
+def download_tick(line: str, year_month: int, output_dir: str):
     hq_logger.info(f"start {year_month}")
+    q = Queue(maxsize=32)
     hq_app = HistoryApp(q)
     hq_app.start()
+    threading.Thread(target=tick_worker, args=(q, year_month, output_dir), daemon=True).start()
 
     for target_date in get_month_dates(year_month):
         hq_app.get(
@@ -214,8 +218,11 @@ def download_tick(line: str, year_month: int, q: Queue):
         )
     hq_app.wait()
     hq_logger.debug(f"hq_app finish downloading {year_month}")
+    q.join()
+    hq_logger.debug(f"tick_worker finish processing {year_month}")
     hq_app.stop()
     hq_logger.info("hq_app disconnect from server.")
+    hq_logger.info(f"finish {year_month}")
 
 
 def run_kl1m_downloader(args):
@@ -226,12 +233,8 @@ def run_kl1m_downloader(args):
         line = "shkl:kl1m:@60.*|@68.*+szkl:kl1m:@00.*|@30.*"
         out_dir = "kl1m/stocks"
 
-    q = Queue(maxsize=64)
-    threading.Thread(target=kl1m_worker, args=(q, out_dir), daemon=True).start()
     for year_int in range(args.yr_start, args.yr_end + 1):
-        download_kl1m(line, year_int, q)
-    q.join()
-    hq_logger.info("kl1m_worker finish processing.")
+        download_kl1m(line, year_int, output_dir=out_dir)
 
 
 def gen_ym_list(ym_start: int, ym_end: int) -> list:
@@ -249,12 +252,8 @@ def run_tick_downloader(args):
         line = "shl2:tick:@60.*|@68.*+szl2:tick:@00.*|@30.*"
         out_dir = "tick/stocks"
 
-    q = Queue(maxsize=32)
-    threading.Thread(target=tick_worker, args=(q, out_dir), daemon=True).start()
     for year_month in gen_ym_list(args.ym_start, args.ym_end):
-        download_tick(line, year_month, q)
-    q.join()
-    hq_logger.info("tick_worker finish processing.")
+        download_tick(line, year_month, output_dir=out_dir)
 
 
 if __name__ == "__main__":
