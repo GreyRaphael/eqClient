@@ -5,6 +5,7 @@ from queue import Queue
 import configparser
 import logging
 import datetime as dt
+import time
 import argparse
 import json
 import eqapi
@@ -118,8 +119,9 @@ def download_kl1m(line: str, year: int, output_dir: str):
             startTime=92500000,
             endDate=target_date,
             endTime=150000000,
-            rate=-1,  # unsorted
+            rate=0,  # unsorted
         )
+    time.sleep(15)
     hq_app.wait()
     hq_logger.debug(f"hq_app finish downloading {year}")
     q.join()
@@ -214,8 +216,9 @@ def download_tick(line: str, year_month: int, output_dir: str):
             startTime=92500000,
             endDate=target_date,
             endTime=150100000,
-            rate=-1,  # unsorted
+            rate=0,  # unsorted
         )
+    time.sleep(15)
     hq_app.wait()
     hq_logger.debug(f"hq_app finish downloading {year_month}")
     q.join()
