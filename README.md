@@ -3,6 +3,7 @@
 - [README](#readme)
   - [Usage](#usage)
   - [Calendar](#calendar)
+  - [Tips](#tips)
 
 ## Usage
 
@@ -27,3 +28,7 @@ calendar is download from windapi table
 - 2021 243
 - 2022 242
 - 2023 242
+
+## Tips
+
+async method: `get()` 和 `wait()` 一一对应
