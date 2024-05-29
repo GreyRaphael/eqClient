@@ -5,7 +5,6 @@ from queue import Queue
 import configparser
 import logging
 import datetime as dt
-import time
 import argparse
 import json
 import eqapi
@@ -25,7 +24,7 @@ def get_logger(name: str, level=logging.DEBUG, fmt="%(asctime)s - %(levelname)s 
 
 
 hq_logger = get_logger("hq")
-eq_logger = get_logger("eq", fmt="")
+eq_logger = get_logger("eq", fmt="%(asctime)s - %(message)s")
 
 
 class HistoryApp(eqapi.HqApplication):
@@ -63,76 +62,7 @@ class HistoryApp(eqapi.HqApplication):
         eq_logger.debug(msg)
 
 
-def kl1m_worker(q: Queue, year: int, output_dir: str):
-    os.makedirs(f"{output_dir}/{year}", exist_ok=True)
-    count = 0
-    while True:
-        quotes = q.get()
-        count += 1
-
-        with io.StringIO("\n".join(quotes)) as mem_file:
-            pl.read_ndjson(
-                mem_file,
-                schema={
-                    "0": pl.Utf8,
-                    "3": pl.Int32,
-                    "4": pl.Int32,
-                    "101": pl.Int32,  # open, int64
-                    "102": pl.Int32,  # high, int64
-                    "103": pl.Int32,  # low, int64
-                    "104": pl.Int32,  # last, int64
-                    "112": pl.Int32,  # num_trades, int64
-                    "113": pl.Int64,
-                    "114": pl.Int64,
-                },
-            ).rename(
-                {
-                    "0": "code",
-                    "3": "date",
-                    "4": "time",
-                    "101": "open",
-                    "102": "high",
-                    "103": "low",
-                    "104": "last",
-                    "112": "num_trades",
-                    "113": "volume",
-                    "114": "amount",
-                }
-            ).write_parquet(f"{output_dir}/{year}/{count:08d}.parquet")
-        q.task_done()
-        hq_logger.debug(f"===>finish {len(quotes)} quotes")
-
-
-def download_kl1m(line: str, year: int, output_dir: str):
-    hq_logger.info(f"start {year}")
-    q = Queue(maxsize=64)
-    hq_app = HistoryApp(q)
-    hq_app.start()
-    threading.Thread(target=kl1m_worker, args=(q, year, output_dir), daemon=True).start()
-
-    with open(f"calendar/{year}.json") as file:
-        date_ints = json.load(file)
-    for target_date in date_ints:
-        hq_app.get(
-            line=line,
-            startDate=target_date,
-            startTime=92500000,
-            endDate=target_date,
-            endTime=150000000,
-            rate=0,  # unsorted
-        )
-    time.sleep(15)
-    hq_app.wait()
-    hq_logger.debug(f"hq_app finish downloading {year}")
-    q.join()
-    hq_logger.debug(f"kl1m_worker finish processing {year}")
-    hq_app.stop()
-    hq_logger.debug("hq_app disconnect from server.")
-    hq_logger.info(f"finish {year}")
-
-
-def tick_worker(q: Queue, year_month: int, output_dir: str):
-    os.makedirs(f"{output_dir}/{year_month}", exist_ok=True)
+def worker(q: Queue, schema_mapping: dict, name_mapping: dict, output_dir: str):
     count = 0
     while True:
         quotes = q.get()
@@ -140,140 +70,145 @@ def tick_worker(q: Queue, year_month: int, output_dir: str):
 
         # sort the quotes by length, long -> short
         quotes.sort(key=len, reverse=True)
-        with io.StringIO("\n".join(quotes)) as mem_file:
-            pl.read_ndjson(
-                mem_file,
-                schema={
-                    "0": pl.Utf8,  # code char[16]
-                    "3": pl.Int32,  # date int32
-                    "4": pl.Int32,  # time int32
-                    "100": pl.Int32,  # preclose Int64
-                    "101": pl.Int32,  # open Int64
-                    # "102": pl.Int32,  # high Int64
-                    # "103": pl.Int32,  # low Int64
-                    "104": pl.Int32,  # last Int64
-                    "108": pl.List(pl.Int32),  # ask_prices Int64[10]
-                    "109": pl.List(pl.Int32),  # ask_volumes Int64[10]
-                    "110": pl.List(pl.Int32),  # bid_prices Int64[10]
-                    "111": pl.List(pl.Int32),  # bid_volumes Int64[10]
-                    "112": pl.Int32,  # num_trades Int64
-                    "113": pl.Int64,  # volume int64
-                    "114": pl.Int64,  # amount Int64
-                    "115": pl.Int64,  # total_bid_volume int64
-                    "116": pl.Int32,  # bid_avg_price Int64
-                    "118": pl.Int64,  # total_ask_volume int64
-                    "119": pl.Int32,  # ask_avg_price Int64
-                    # "123": pl.Int32,  # high_limit Int64, since 2018
-                    # "124": pl.Int32,  # low_limit Int64, since 2018
-                },
-            ).rename(
-                {
-                    "0": "code",
-                    "3": "date",
-                    "4": "time",
-                    "100": "preclose",
-                    "101": "open",
-                    # "102": "high",
-                    # "103": "low",
-                    "104": "last",
-                    "108": "ask_prices",
-                    "109": "ask_volumes",
-                    "110": "bid_prices",
-                    "111": "bid_volumes",
-                    "112": "num_trades",
-                    "113": "volume",
-                    "114": "amount",
-                    "115": "total_bid_volume",
-                    "116": "bid_avg_price",
-                    "118": "total_ask_volume",
-                    "119": "ask_avg_price",
-                    # "123": "high_limit",
-                    # "124": "low_limit",
-                }
-            ).write_parquet(f"{output_dir}/{year_month}/{count:08d}.parquet")
+
+        with io.BytesIO() as mem_file:
+            for quote in quotes:
+                mem_file.write(quote.encode())
+                mem_file.write(b"\n")
+
+            df = pl.read_ndjson(mem_file, schema=schema_mapping).rename(name_mapping)
+            current_date = df.item(0, "date")
+            os.makedirs(f"{output_dir}/{current_date}", exist_ok=True)
+            df.write_parquet(f"{output_dir}/{current_date}/{count:08d}.parquet")
         q.task_done()
-        hq_logger.debug(f"===>finish {len(quotes)} quotes")
+        hq_logger.debug(f"===>finish {len(quotes)} quotes of {current_date}")
 
 
-def get_month_dates(year_month: int) -> list:
-    year = year_month // 100
-    with open(f"calendar/{year}.json", "r") as file:
-        year_dates = json.load(file)
-    return [i for i in year_dates if i // 100 == year_month]
+def get_target_dates(ym_start: int, ym_end: int) -> list[int]:
+    year_start = ym_start // 100
+    year_end = ym_end // 100
+    target_dates = []
+    for year in range(year_start, year_end + 1):
+        with open(f"calendar/{year}.json", "r") as file:
+            target_dates += json.load(file)
+    return [i for i in target_dates if ym_start * 100 < i <= ym_end * 100 + 31]
 
 
-def download_tick(line: str, year_month: int, output_dir: str):
-    hq_logger.info(f"start {year_month}")
-    q = Queue(maxsize=32)
+def process(args):
+    out_dir = f"{args.secu_type}/{args.quote_type}"  # etf/tick/
+    hq_logger.debug(f"output dir: {out_dir}")
+
+    if args.quote_type == "kl1m":
+        eq_line = "kl:kl1m"
+        qsize = 128
+        schema = {
+            "0": pl.Utf8,
+            "3": pl.Int32,
+            "4": pl.Int32,
+            "101": pl.Int32,  # open, int64
+            "102": pl.Int32,  # high, int64
+            "103": pl.Int32,  # low, int64
+            "104": pl.Int32,  # last, int64
+            "112": pl.Int32,  # num_trades, int64
+            "113": pl.Int64,
+            "114": pl.Int64,
+        }
+        name_mapping = {
+            "0": "code",
+            "3": "date",
+            "4": "time",
+            "101": "open",
+            "102": "high",
+            "103": "low",
+            "104": "last",
+            "112": "num_trades",
+            "113": "volume",
+            "114": "amount",
+        }
+    else:
+        eq_line = "l2:tick"
+        qsize = 32
+        schema = {
+            "0": pl.Utf8,  # code char[16]
+            "3": pl.Int32,  # date int32
+            "4": pl.Int32,  # time int32
+            "100": pl.Int32,  # preclose Int64
+            "101": pl.Int32,  # open Int64
+            # "102": pl.Int32,  # high Int64
+            # "103": pl.Int32,  # low Int64
+            "104": pl.Int32,  # last Int64
+            "108": pl.List(pl.Int32),  # ask_prices Int64[10]
+            "109": pl.List(pl.Int32),  # ask_volumes Int64[10]
+            "110": pl.List(pl.Int32),  # bid_prices Int64[10]
+            "111": pl.List(pl.Int32),  # bid_volumes Int64[10]
+            "112": pl.Int32,  # num_trades Int64
+            "113": pl.Int64,  # volume int64
+            "114": pl.Int64,  # amount Int64
+            "115": pl.Int64,  # total_bid_volume int64
+            "116": pl.Int32,  # bid_avg_price Int64
+            "118": pl.Int64,  # total_ask_volume int64
+            "119": pl.Int32,  # ask_avg_price Int64
+            # "123": pl.Int32,  # high_limit Int64, since 2018
+            # "124": pl.Int32,  # low_limit Int64, since 2018
+        }
+        name_mapping = {
+            "0": "code",
+            "3": "date",
+            "4": "time",
+            "100": "preclose",
+            "101": "open",
+            # "102": "high",
+            # "103": "low",
+            "104": "last",
+            "108": "ask_prices",
+            "109": "ask_volumes",
+            "110": "bid_prices",
+            "111": "bid_volumes",
+            "112": "num_trades",
+            "113": "volume",
+            "114": "amount",
+            "115": "total_bid_volume",
+            "116": "bid_avg_price",
+            "118": "total_ask_volume",
+            "119": "ask_avg_price",
+            # "123": "high_limit",
+            # "124": "low_limit",
+        }
+
+    if args.secu_type == "etf":
+        line = f"sh{eq_line}:@510.*|@511.*|@512.*|@513.*|@515.*|@516.*|@517.*|@518.*|@560.*|@561.*|@562.*|@563.*|@588.*+sz{eq_line}:@159.*"
+    else:
+        line = f"sh{eq_line}:@60.*|@68.*+sz{eq_line}:@00.*|@30.*"
+    hq_logger.debug(f"quote line: {line}")
+
+    q = Queue(maxsize=qsize)
     hq_app = HistoryApp(q)
+    threading.Thread(target=worker, args=(q, schema, name_mapping, out_dir), daemon=True).start()
     hq_app.start()
-    threading.Thread(target=tick_worker, args=(q, year_month, output_dir), daemon=True).start()
 
-    for target_date in get_month_dates(year_month):
+    for target_date in get_target_dates(args.ym_start, args.ym_end):
         hq_app.get(
             line=line,
             startDate=target_date,
             startTime=92500000,
             endDate=target_date,
             endTime=150100000,
-            rate=0,  # unsorted
+            rate=0,  # sorted
         )
-    time.sleep(15)
-    hq_app.wait()
-    hq_logger.debug(f"hq_app finish downloading {year_month}")
+        hq_app.wait()
+        hq_logger.info(f"hq_app downloaded {target_date}")
     q.join()
-    hq_logger.debug(f"tick_worker finish processing {year_month}")
+    hq_logger.debug(f"worker finish processing {args.ym_start}~{args.ym_end}")
     hq_app.stop()
     hq_logger.info("hq_app disconnect from server.")
-    hq_logger.info(f"finish {year_month}")
-
-
-def run_kl1m_downloader(args):
-    if args.etf:
-        line = "shkl:kl1m:@510.*|@511.*|@512.*|@513.*|@515.*|@516.*|@517.*|@518.*|@560.*|@561.*|@562.*|@563.*|@588.*+szkl:kl1m:@159.*"
-        out_dir = "kl1m/etf"
-    else:
-        line = "shkl:kl1m:@60.*|@68.*+szkl:kl1m:@00.*|@30.*"
-        out_dir = "kl1m/stocks"
-
-    for year_int in range(args.yr_start, args.yr_end + 1):
-        download_kl1m(line, year_int, output_dir=out_dir)
-
-
-def gen_ym_list(ym_start: int, ym_end: int) -> list:
-    year_start = ym_start // 100
-    year_end = ym_end // 100
-    ym_list = [year * 100 + month for year in range(year_start, year_end + 1) for month in range(1, 13)]
-    return [ym for ym in ym_list if ym_start <= ym <= ym_end]
-
-
-def run_tick_downloader(args):
-    if args.etf:
-        line = "shl2:tick:@510.*|@511.*|@512.*|@513.*|@515.*|@516.*|@517.*|@518.*|@560.*|@561.*|@562.*|@563.*|@588.*+szl2:tick:@159.*"
-        out_dir = "tick/etf"
-    else:
-        line = "shl2:tick:@60.*|@68.*+szl2:tick:@00.*|@30.*"
-        out_dir = "tick/stocks"
-
-    for year_month in gen_ym_list(args.ym_start, args.ym_end):
-        download_tick(line, year_month, output_dir=out_dir)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="history quotes downloader")
-    subparsers = parser.add_subparsers(title="subcommands", required=True)
-
-    kl1m_parser = subparsers.add_parser("kl1m", help="download kl1m")
-    kl1m_parser.add_argument("--yr-start", type=int, required=True, help="start year, 2021")
-    kl1m_parser.add_argument("--yr-end", type=int, required=True, help="end year, 2023")
-    kl1m_parser.add_argument("--etf", action="store_true", help="flag, if set 'etf' else 'stocks'")
-    kl1m_parser.set_defaults(func=run_kl1m_downloader)
-
-    tick_parser = subparsers.add_parser("tick", help="download tick")
-    tick_parser.add_argument("--ym-start", type=int, required=True, help="start month batch, 202301")
-    tick_parser.add_argument("--ym-end", type=int, required=True, help="end month batch, 202412")
-    tick_parser.add_argument("--etf", action="store_true", help="flag, if set 'etf' else 'stocks'")
-    tick_parser.set_defaults(func=run_tick_downloader)
+    parser.add_argument("-yms", type=int, required=True, dest="ym_start", help="start year-month, 200701")
+    parser.add_argument("-yme", type=int, required=True, dest="ym_end", help="end year-month, 202412")
+    parser.add_argument("-st", type=str, required=True, dest="secu_type", choices=["stock", "etf"], help="security type")
+    parser.add_argument("-qt", type=str, required=True, dest="quote_type", choices=["tick", "kl1m"], help="quote type")
 
     args = parser.parse_args()
-    args.func(args)
+    process(args)
