@@ -24,7 +24,6 @@ def get_logger(name: str, level=logging.DEBUG, fmt="%(asctime)s - %(levelname)s 
 
 
 hq_logger = get_logger("hq")
-eq_logger = get_logger("eq", fmt="%(asctime)s - %(message)s")
 
 
 class HistoryApp(eqapi.HqApplication):
@@ -32,6 +31,7 @@ class HistoryApp(eqapi.HqApplication):
         hq_setting = self._read_config("hq.cfg")
         super().__init__([hq_setting, hq_setting])
         self._quotes_q = q
+        self.eq_logger = get_logger("eq", fmt="%(asctime)s - %(message)s")
 
     def _read_config(self, configfile: str) -> eqapi.EqSetting:
         parser = configparser.ConfigParser()
@@ -47,19 +47,23 @@ class HistoryApp(eqapi.HqApplication):
         return setting
 
     def onConnect(self, msg):
-        eq_logger.info(msg)
+        self.eq_logger.info(msg)
 
     def onDisconnect(self, msg):
-        eq_logger.info(msg)
+        self.eq_logger.info(msg)
 
     def onQuote(self, quotes):
         self._quotes_q.put(quotes)
+        hq_logger.debug(f"receive {len(quotes)} quotes from server")
 
     def onError(self, msg):
-        eq_logger.error(msg)
+        self.eq_logger.error(msg)
 
     def onLog(self, msg):
-        eq_logger.debug(msg)
+        self.eq_logger.debug(msg)
+        if "Server Log: data complete, total" in msg:
+            idx = msg.find("Server Log")
+            hq_logger.info(msg[idx:])
 
 
 def worker(q: Queue, schema_mapping: dict, name_mapping: dict, output_dir: str):
