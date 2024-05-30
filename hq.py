@@ -90,28 +90,18 @@ def worker(q: Queue, schema_mapping: dict, name_mapping: dict, output_dir: str):
         hq_logger.debug(f"===>finish {len(quotes)} quotes of {current_date}")
 
 
-def get_target_dates(ym_start: int, ym_end: int) -> list[int]:
-    year_start = ym_start // 100
-    year_end = ym_end // 100
-    target_dates = []
-    for year in range(year_start, year_end + 1):
-        with open(f"calendar/{year}.json", "r") as file:
-            target_dates += json.load(file)
-    return [i for i in target_dates if ym_start * 100 < i <= ym_end * 100 + 31]
-
-
-def process(args):
+def download(secu_type: str, quote_type: str, target_dates: list[int]):
     """
-    args: Namespace(ym_start, ym_end, secu_type, quote_type)
-          ym_start: int, example: 200702
-            ym_end: int, example: 202201
-         secu_type: str, example: etf, stock
+    Download the quotes in the target_dates list, where the quotes meet the secu_type and quote_type.\n\n
+    Args:
+        secu_type: str, example: etf, stock
         quote_type: str, example: kl1m, tick
+        target_dates: list[int], example: [20220101, 20220102, ...]
     """
-    out_dir = f"{args.secu_type}/{args.quote_type}"  # etf/tick/
+    out_dir = f"{secu_type}/{quote_type}"  # etf/tick/
     hq_logger.debug(f"output dir: {out_dir}")
 
-    if args.quote_type == "kl1m":
+    if quote_type == "kl1m":
         eq_line = "kl:kl1m"
         qsize = 128
         schema = {
@@ -188,7 +178,7 @@ def process(args):
             # "124": "low_limit",
         }
 
-    if args.secu_type == "etf":
+    if secu_type == "etf":
         line = f"sh{eq_line}:@510.*|@511.*|@512.*|@513.*|@515.*|@516.*|@517.*|@518.*|@560.*|@561.*|@562.*|@563.*|@588.*+sz{eq_line}:@159.*"
     else:
         line = f"sh{eq_line}:@60.*|@68.*+sz{eq_line}:@00.*|@30.*"
@@ -199,7 +189,7 @@ def process(args):
     threading.Thread(target=worker, args=(q, schema, name_mapping, out_dir), daemon=True).start()
     hq_app.start()
 
-    for target_date in get_target_dates(args.ym_start, args.ym_end):
+    for target_date in target_dates:
         hq_app.get(
             line=line,
             startDate=target_date,
@@ -211,9 +201,24 @@ def process(args):
         hq_app.wait()
         hq_logger.info(f"hq_app downloaded {target_date}")
     q.join()
-    hq_logger.debug(f"worker finish processing {args.ym_start}~{args.ym_end}")
+    hq_logger.debug(f"worker finish processing {target_dates[0]}~{target_dates[-1]}")
     hq_app.stop()
     hq_logger.info("hq_app disconnect from server.")
+
+
+def get_target_dates(ym_start: int, ym_end: int) -> list[int]:
+    year_start = ym_start // 100
+    year_end = ym_end // 100
+    target_dates = []
+    for year in range(year_start, year_end + 1):
+        with open(f"calendar/{year}.json", "r") as file:
+            target_dates += json.load(file)
+    return [i for i in target_dates if ym_start * 100 < i <= ym_end * 100 + 31]
+
+
+def process(args):
+    target_dates = get_target_dates(args.ym_start, args.ym_end)
+    download(args.secu_type, args.quote_type, target_dates)
 
 
 if __name__ == "__main__":
