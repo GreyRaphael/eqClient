@@ -3,9 +3,9 @@ import argparse
 import os
 
 
-def combiner_ym(year_month: int, in_dir: str, output_dir: str):
-    in_files = f"{in_dir}/{year_month}/*"
-    print("reading", in_files)
+def combine_tick(year_month: int, in_dir: str, output_dir: str):
+    in_files = f"{in_dir}/{year_month}*/*.parquet"
+    print("===>reading", in_files)
 
     df = (
         pl.scan_parquet(in_files)
@@ -31,12 +31,19 @@ def combiner_ym(year_month: int, in_dir: str, output_dir: str):
         .sort(["code", "dt"])
         .collect()
     )
-    print(df.null_count().select("code", "dt", "preclose", "open", "last", "avg_ap", "avg_bp").to_dicts())
+    print("===>collected")
+    null_cont_sum = df.null_count().select("code", "dt", "preclose", "open", "last").sum_horizontal().item(0)
+    if null_cont_sum > 0:
+        print(df.null_count().select("code", "dt", "preclose", "open", "last", "avg_ap", "avg_bp").to_dicts())
 
     os.makedirs(output_dir, exist_ok=True)
     out_file = f"{output_dir}/{year_month}.ipc"
     df.write_ipc(out_file, compression="zstd")
     print("===>finish", out_file)
+
+
+def combine_kl1m(year_month: int, in_dir: str, output_dir: str):
+    pass
 
 
 def gen_ym_list(ym_start: int, ym_end: int) -> list:
@@ -46,25 +53,24 @@ def gen_ym_list(ym_start: int, ym_end: int) -> list:
     return [ym for ym in ym_list if ym_start <= ym <= ym_end]
 
 
-def run_tick_combiner(args):
-    if args.etf:
-        in_dir = "tick/etf"
-        out_dir = "tick-etf"
+def process(args):
+    in_dir = f"{args.secu_type}/{args.quote_type}"  # etf/tick/
+    out_dir = f"{args.secu_type}-{args.quote_type}"  # etf-tick/
+    if args.quote_type == "kl1m":
+        combiner = combine_kl1m
     else:
-        in_dir = "tick/stocks"
-        out_dir = "tick-stocks"
+        combiner = combine_tick
 
     for year_month in gen_ym_list(args.ym_start, args.ym_end):
-        combiner_ym(year_month, in_dir, out_dir)
+        combiner(year_month, in_dir, out_dir)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="tick parquets combiner")
-
-    parser.add_argument("--ym-start", type=int, required=True, help="start year month, 202201")
-    parser.add_argument("--ym-end", type=int, required=True, help="end year month, 202312")
-    parser.add_argument("--etf", action="store_true", help="flag, if set 'etf' else 'stocks'")
-    parser.set_defaults(func=run_tick_combiner)
+    parser = argparse.ArgumentParser(description="history quotes combiner")
+    parser.add_argument("-yms", type=int, required=True, dest="ym_start", help="start year-month, 200701")
+    parser.add_argument("-yme", type=int, required=True, dest="ym_end", help="end year-month, 202412")
+    parser.add_argument("-st", type=str, required=True, dest="secu_type", choices=["stock", "etf"], help="security type")
+    parser.add_argument("-qt", type=str, required=True, dest="quote_type", choices=["tick", "kl1m"], help="quote type")
 
     args = parser.parse_args()
-    args.func(args)
+    process(args)
