@@ -15,7 +15,7 @@ def get_logger(name: str, level=logging.DEBUG, fmt="%(asctime)s - %(levelname)s 
     logger = logging.getLogger(name)
     logger.setLevel(level)
 
-    file_handler = logging.FileHandler(f'{dt.datetime.now().strftime("%Y%m%d-%H%M")}_{name}.log')
+    file_handler = logging.FileHandler(f'log/{dt.datetime.now().strftime("%Y%m%d-%H%M")}_{name}.log')
     formatter = logging.Formatter(fmt)
     file_handler.setFormatter(formatter)
 
