@@ -40,14 +40,14 @@ def download_calendar(year: str, out_int: bool, output_dir: str = "."):
 
 def download_calendars(args):
     for year in range(args.yr_start, args.yr_end + 1):
-        download_calendar(year, args.out_int)
+        download_calendar(year, args.out_int, output_dir="calendar")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="download trading days")
-    parser.add_argument("--yr-start", type=int, required=True, help="start year, 2021")
-    parser.add_argument("--yr-end", type=int, required=True, help="end year, 2023")
-    parser.add_argument("--out-int", action="store_true", help="flag, if set 'integer' else 'string'")
+    parser.add_argument("-yrs", type=int, required=True, dest="yr_start", help="start year, 2021")
+    parser.add_argument("-yre", type=int, required=True, dest="yr_end", help="end year, 2023")
+    parser.add_argument("-oi", dest="out_int", action="store_true", help="flag, if set 'integer' else 'string'")
     parser.set_defaults(func=download_calendars)
 
     args = parser.parse_args()
