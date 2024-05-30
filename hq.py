@@ -15,7 +15,7 @@ def get_logger(name: str, level=logging.DEBUG, fmt="%(asctime)s - %(levelname)s 
     logger = logging.getLogger(name)
     logger.setLevel(level)
 
-    os.makedirs('log', exist_ok=True)
+    os.makedirs("log", exist_ok=True)
     file_handler = logging.FileHandler(f'log/{dt.datetime.now().strftime("%Y%m%d-%H%M")}_{name}.log')
     formatter = logging.Formatter(fmt)
     file_handler.setFormatter(formatter)
@@ -82,9 +82,10 @@ def worker(q: Queue, schema_mapping: dict, name_mapping: dict, output_dir: str):
                 mem_file.write(b"\n")
 
             df = pl.read_ndjson(mem_file, schema=schema_mapping).rename(name_mapping)
-            current_date = df.item(0, "date")
-            os.makedirs(f"{output_dir}/{current_date}", exist_ok=True)
-            df.write_parquet(f"{output_dir}/{current_date}/{count:08d}.parquet")
+
+        current_date = df.item(0, "date")
+        os.makedirs(f"{output_dir}/{current_date}", exist_ok=True)
+        df.write_parquet(f"{output_dir}/{current_date}/{count:08d}.parquet")
         q.task_done()
         hq_logger.debug(f"===>finish {len(quotes)} quotes of {current_date}")
 
