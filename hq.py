@@ -101,6 +101,13 @@ def get_target_dates(ym_start: int, ym_end: int) -> list[int]:
 
 
 def process(args):
+    """
+    args: Namespace(ym_start, ym_end, secu_type, quote_type)
+          ym_start: int, example: 200702
+            ym_end: int, example: 202201
+         secu_type: str, example: etf, stock
+        quote_type: str, example: kl1m, tick
+    """
     out_dir = f"{args.secu_type}/{args.quote_type}"  # etf/tick/
     hq_logger.debug(f"output dir: {out_dir}")
 
