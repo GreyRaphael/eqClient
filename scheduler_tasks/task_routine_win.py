@@ -18,10 +18,10 @@ def job_worker(secu_type: str, quote_type: str):
     chatbot.send_msg(f"finish task of {secu_type} {quote_type} at {target_dates}")
 
 
-# run at 9:45 at every Sat etf, tick
-# run at 18:45 at every Sat etf, kl1m
-# run at 9:45 at every Sun stock, tick, later
-# run at 18:45 at every Sun stock, kl1m, later
+# run at 16:10 at every Sat etf, tick
+# run at 15:10 at every Sat etf, kl1m
+# run at 16:45 at every Sun stock, tick, later
+# run at 15:10 at every Sun stock, kl1m, later
 
 
 def process(args):

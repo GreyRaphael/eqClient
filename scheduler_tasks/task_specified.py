@@ -13,8 +13,8 @@ def job_worker(args):
 
 task_dict = {
     "2024-05-31 15:07:00": Args(ym_start=202101, ym_end=202206, secu_type="etf", quote_type="tick"),
-    "2024-06-01 09:51:00": Args(ym_start=202207, ym_end=202312, secu_type="etf", quote_type="tick"),
-    "2024-06-02 09:47:00": Args(ym_start=202401, ym_end=202404, secu_type="etf", quote_type="tick"),
+    "2024-06-01 15:09:00": Args(ym_start=202207, ym_end=202312, secu_type="etf", quote_type="tick"),
+    "2024-06-02 15:13:00": Args(ym_start=202401, ym_end=202404, secu_type="etf", quote_type="tick"),
 }
 
 
