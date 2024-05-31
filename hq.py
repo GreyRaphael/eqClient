@@ -24,7 +24,7 @@ def get_logger(name: str, level=logging.DEBUG, fmt="%(asctime)s - %(levelname)s 
     return logger
 
 
-hq_logger = get_logger("hq")
+hq_logger = None
 
 
 class HistoryApp(eqapi.HqApplication):
@@ -98,6 +98,9 @@ def download(secu_type: str, quote_type: str, target_dates: list[int]):
         quote_type: str, example: kl1m, tick
         target_dates: list[int], example: [20220101, 20220102, ...]
     """
+    global hq_logger
+    hq_logger = get_logger("hq")
+
     out_dir = f"{secu_type}/{quote_type}"  # etf/tick/
     hq_logger.debug(f"output dir: {out_dir}")
 
