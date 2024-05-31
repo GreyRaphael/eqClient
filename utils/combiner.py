@@ -43,7 +43,40 @@ def combine_tick(year_month: int, in_dir: str, output_dir: str):
 
 
 def combine_kl1m(year_month: int, in_dir: str, output_dir: str):
-    pass
+    in_files = f"{in_dir}/{year_month}*/*.parquet"
+    print("reading", in_files)
+
+    df = (
+        pl.scan_parquet(in_files)
+        .with_columns(
+            pl.col("open").replace(-1, 0),
+            pl.col("high").replace(-1, 0),
+            pl.col("low").replace(-1, 0),
+            pl.col("last").replace(-1, 0),
+        )
+        .select(
+            pl.col("code").cast(pl.UInt32),
+            (pl.col("date").cast(pl.Utf8) + pl.col("time").cast(pl.Utf8).str.pad_start(9, "0")).str.to_datetime("%Y%m%d%H%M%S%3f").alias("dt"),
+            pl.col("open").cast(pl.UInt32),
+            pl.col("high").cast(pl.UInt32),
+            pl.col("low").cast(pl.UInt32),
+            pl.col("last").cast(pl.UInt32),
+            pl.col("num_trades").cast(pl.UInt32),
+            pl.col("volume").cast(pl.UInt64),
+            pl.col("amount").cast(pl.UInt64),
+        )
+        .sort(["code", "dt"])
+        .collect()
+    )
+    print("collected")
+    null_cont_sum = df.null_count().sum_horizontal().item(0)
+    if null_cont_sum > 0:
+        print("===>", df.null_count().to_dicts())
+
+    os.makedirs(output_dir, exist_ok=True)
+    out_file = f"{output_dir}/{year_month}.ipc"
+    df.write_ipc(out_file, compression="zstd")
+    print("finish", out_file)
 
 
 def gen_ym_list(ym_start: int, ym_end: int) -> list:
