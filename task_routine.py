@@ -1,5 +1,4 @@
 import datetime as dt
-import json
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler import events
 import hq
@@ -9,17 +8,7 @@ def collect_trade_days(current_dt: dt.date | dt.datetime) -> list[int]:
     """collect the trading days in the week of current date or datetime"""
     monday = current_dt - dt.timedelta(days=current_dt.weekday())
     this_workdays = [monday + dt.timedelta(days=i) for i in range(5)]
-    friday = this_workdays[-1]
-    year_head, year_tail = monday.year, friday.year
-    trading_days = set()
-    candidate_trade_days = [i.year * 10000 + i.month * 100 + i.day for i in this_workdays]
-    # print(candidate_trade_days)
-    with open(f"calendar/{year_head}.json") as f_head, open(f"calendar/{year_tail}.json") as f_tail:
-        for item in json.load(f_head):
-            trading_days.add(item)
-        for item in json.load(f_tail):
-            trading_days.add(item)
-    return [j for j in candidate_trade_days if j in trading_days]
+    return [i.year * 10000 + i.month * 100 + i.day for i in this_workdays]
 
 
 def job_worker(secu_type: str, quote_type: str):
