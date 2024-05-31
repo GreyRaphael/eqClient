@@ -32,3 +32,5 @@ calendar is download from windapi table
 ## Tips
 
 async method: `get()` 和 `wait()` 一一对应
+
+如果没有找到quotes, `onQuote()`不会被调用
