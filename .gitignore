@@ -2,3 +2,4 @@ __pycache__
 hq.cfg
 rq.cfg
 *.log
+chatbot.json
