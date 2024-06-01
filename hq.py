@@ -24,15 +24,13 @@ def get_logger(name: str, level=logging.DEBUG, fmt="%(asctime)s - %(levelname)s 
     return logger
 
 
-hq_logger = None
-
-
 class HistoryApp(eqapi.HqApplication):
     def __init__(self, q: Queue):
         hq_setting = self._read_config("hq.cfg")
         super().__init__([hq_setting, hq_setting])
         self._quotes_q = q
         self.eq_logger = get_logger("eq", fmt="%(asctime)s - %(message)s")
+        self.hq_logger = logging.getLogger("hq")
 
     def _read_config(self, configfile: str) -> eqapi.EqSetting:
         parser = configparser.ConfigParser()
@@ -55,7 +53,7 @@ class HistoryApp(eqapi.HqApplication):
 
     def onQuote(self, quotes):
         self._quotes_q.put(quotes)
-        hq_logger.debug(f"receive {len(quotes)} quotes from server")
+        self.hq_logger.debug(f"receive {len(quotes)} quotes from server")
 
     def onError(self, msg):
         self.eq_logger.error(msg)
@@ -64,11 +62,12 @@ class HistoryApp(eqapi.HqApplication):
         self.eq_logger.debug(msg)
         if "Server Log: data complete, total" in msg:
             idx = msg.find("Server Log")
-            hq_logger.info(msg[idx:])
+            self.hq_logger.info(msg[idx:])
 
 
 def worker(q: Queue, schema_mapping: dict, name_mapping: dict, output_dir: str):
     count = 0
+    hq_logger = logging.getLogger("hq")
     while True:
         quotes = q.get()
         count += 1
@@ -98,7 +97,6 @@ def download(secu_type: str, quote_type: str, target_dates: list[int]):
         quote_type: str, example: kl1m, tick
         target_dates: list[int], example: [20220101, 20220102, ...]
     """
-    global hq_logger
     hq_logger = get_logger("hq")
 
     out_dir = f"{secu_type}/{quote_type}"  # etf/tick/
