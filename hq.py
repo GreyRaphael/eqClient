@@ -191,6 +191,7 @@ def download(secu_type: str, quote_type: str, target_dates: list[int]):
     hq_app.start()
 
     for target_date in target_dates:
+        hq_logger.debug(f"hq_app begin {target_date}")
         hq_app.get(
             line=line,
             startDate=target_date,
