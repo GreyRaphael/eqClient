@@ -9,6 +9,7 @@ import argparse
 import json
 import eqapi
 import polars as pl
+from utils import chatbot
 
 
 def get_logger(name: str, level=logging.DEBUG, fmt="%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(funcName)s - %(message)s"):
@@ -131,7 +132,7 @@ def download(secu_type: str, quote_type: str, target_dates: list[int]):
         }
     else:
         eq_line = "l2:tick"
-        qsize = 32
+        qsize = 64
         schema = {
             "0": pl.Utf8,  # code char[16]
             "3": pl.Int32,  # date int32
@@ -198,7 +199,7 @@ def download(secu_type: str, quote_type: str, target_dates: list[int]):
             startTime=92500000,
             endDate=target_date,
             endTime=150100000,
-            rate=0,  # sorted
+            rate=-1,  # unsorted
         )
         hq_app.wait()
         hq_logger.info(f"hq_app downloaded {target_date}")
@@ -219,8 +220,10 @@ def get_target_dates(ym_start: int, ym_end: int) -> list[int]:
 
 
 def process(args):
+    chatbot.send_msg(f"begin {args}")
     target_dates = get_target_dates(args.ym_start, args.ym_end)
     download(args.secu_type, args.quote_type, target_dates)
+    chatbot.send_msg(f"finish {args}")
 
 
 if __name__ == "__main__":
