@@ -1,14 +1,12 @@
 from collections import namedtuple
 from apscheduler.schedulers.blocking import BlockingScheduler
 import hq
-from utils import chatbot
 
 Args = namedtuple("Args", ["ym_start", "ym_end", "secu_type", "quote_type"])
 
 
 def job_worker(args):
     hq.process(args)
-    chatbot.send_msg(f"finish {args}")
 
 
 task_dict = {
