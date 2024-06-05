@@ -98,6 +98,7 @@ def download(secu_type: str, quote_type: str, target_dates: list[int]):
         quote_type: str, example: kl1m, tick
         target_dates: list[int], example: [20220101, 20220102, ...]
     """
+    chatbot.send_msg(f"begin {secu_type}:{quote_type} from {target_dates[0]} to {target_dates[-1]}")
     hq_logger = get_logger("hq")
 
     out_dir = f"{secu_type}/{quote_type}"  # etf/tick/
@@ -207,6 +208,7 @@ def download(secu_type: str, quote_type: str, target_dates: list[int]):
     hq_logger.debug(f"worker finish processing {target_dates[0]}~{target_dates[-1]}")
     hq_app.stop()
     hq_logger.info("hq_app disconnect from server.")
+    chatbot.send_msg(f"finish {secu_type}:{quote_type} from {target_dates[0]} to {target_dates[-1]}")
 
 
 def get_target_dates(ym_start: int, ym_end: int) -> list[int]:
@@ -220,10 +222,8 @@ def get_target_dates(ym_start: int, ym_end: int) -> list[int]:
 
 
 def process(args):
-    chatbot.send_msg(f"begin {args}")
     target_dates = get_target_dates(args.ym_start, args.ym_end)
     download(args.secu_type, args.quote_type, target_dates)
-    chatbot.send_msg(f"finish {args}")
 
 
 if __name__ == "__main__":
