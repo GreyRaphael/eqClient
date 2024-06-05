@@ -1,6 +1,5 @@
 import datetime as dt
 import argparse
-from utils import chatbot
 import hq
 
 
@@ -15,7 +14,6 @@ def job_worker(secu_type: str, quote_type: str):
     today = dt.date.today()
     target_dates = collect_trade_days(today)
     hq.download(secu_type, quote_type, target_dates)
-    chatbot.send_msg(f"finish task of {secu_type} {quote_type} at {target_dates}")
 
 
 # run at 16:10 at every Sat etf, tick
