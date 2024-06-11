@@ -1,6 +1,7 @@
 import datetime as dt
 import argparse
 import hq
+import dt_combiner
 
 
 def collect_trade_days(current_dt: dt.date | dt.datetime) -> list[int]:
@@ -13,7 +14,10 @@ def collect_trade_days(current_dt: dt.date | dt.datetime) -> list[int]:
 def job_worker(secu_type: str, quote_type: str):
     today = dt.date.today()
     target_dates = collect_trade_days(today)
+    # download quotes
     hq.download(secu_type, quote_type, target_dates)
+    # proces data
+    dt_combiner.do_comine(secu_type, quote_type, target_dates)
 
 
 # run at 16:10 at every Sat etf, tick
