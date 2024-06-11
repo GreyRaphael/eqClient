@@ -34,7 +34,7 @@ def combine_tick(target_date: int, in_dir: str, out_dir: str):
     )
     null_cont_sum = df.null_count().select("code", "dt", "preclose", "open", "last").sum_horizontal().item(0)
     if null_cont_sum > 0:
-        chatbot.send_msg(f"{in_dir}/{target_date} null_count: {df.null_count().select("code", "dt", "preclose", "open", "last", "avg_ap", "avg_bp").to_dicts()}")
+        chatbot.send_msg(f'{in_dir}/{target_date} null_count: {df.null_count().select("code", "dt", "preclose", "open", "last", "avg_ap", "avg_bp").to_dicts()}')
 
     final_dir = f"{out_dir}/{target_date // 10000}"
     os.makedirs(final_dir, exist_ok=True)
