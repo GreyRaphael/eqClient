@@ -54,7 +54,8 @@ class HistoryApp(eqapi.HqApplication):
 
     def onQuote(self, quotes):
         self._quotes_q.put(quotes)
-        self.hq_logger.debug(f"receive {len(quotes)} quotes from server")
+        head_j = json.loads(quotes[0])
+        self.hq_logger.debug(f"receive {len(quotes)} quotes from server at {head_j['3']}")
 
     def onError(self, msg):
         self.eq_logger.error(msg)
