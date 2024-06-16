@@ -82,7 +82,7 @@ def worker(q: Queue, schema_mapping: dict, name_mapping: dict, output_dir: str):
                 mem_file.write(quote.encode())
                 mem_file.write(b"\n")
 
-            df = pl.read_ndjson(mem_file, schema=schema_mapping).rename(name_mapping)
+            df = pl.read_ndjson(mem_file, schema_overrides=schema_mapping).rename(name_mapping)
 
         current_date = df.item(0, "date")
         os.makedirs(f"{output_dir}/{current_date}", exist_ok=True)
@@ -91,104 +91,57 @@ def worker(q: Queue, schema_mapping: dict, name_mapping: dict, output_dir: str):
         hq_logger.debug(f"===>finish {len(quotes)} quotes of {current_date}")
 
 
-def download(secu_type: str, quote_type: str, target_dates: list[int]):
-    """
-    Download the quotes in the target_dates list, where the quotes meet the secu_type and quote_type.\n\n
-    Args:
-        secu_type: str, example: etf, stock
-        quote_type: str, example: kl1m, tick
-        target_dates: list[int], example: [20220101, 20220102, ...]
-    """
-    chatbot.send_msg(f"begin {secu_type}:{quote_type} from {target_dates[0]} to {target_dates[-1]}")
+def download(line: str, target_dates: list[int]):
+    chatbot.send_msg(f"begin {line} from {target_dates[0]} to {target_dates[-1]}")
     hq_logger = get_logger("hq")
 
-    out_dir = f"{secu_type}/{quote_type}"  # etf/tick/
-    hq_logger.debug(f"output dir: {out_dir}")
+    out_dir = line.replace(":", "_")  # shl2_tick_510050
+    hq_logger.debug(f"output dir: {out_dir}, quote line: {line}")
 
-    if quote_type == "kl1m":
-        eq_line = "kl:kl1m"
-        qsize = 128
-        schema = {
-            "0": pl.Utf8,
-            "3": pl.Int32,
-            "4": pl.Int32,
-            "101": pl.Int32,  # open, int64
-            "102": pl.Int32,  # high, int64
-            "103": pl.Int32,  # low, int64
-            "104": pl.Int32,  # last, int64
-            "112": pl.Int32,  # num_trades, int64
-            "113": pl.Int64,
-            "114": pl.Int64,
-        }
-        name_mapping = {
-            "0": "code",
-            "3": "date",
-            "4": "time",
-            "101": "open",
-            "102": "high",
-            "103": "low",
-            "104": "last",
-            "112": "num_trades",
-            "113": "volume",
-            "114": "amount",
-        }
-    else:
-        eq_line = "l2:tick"
-        qsize = 64
-        schema = {
-            "0": pl.Utf8,  # code char[16]
-            "3": pl.Int32,  # date int32
-            "4": pl.Int32,  # time int32
-            "100": pl.Int32,  # preclose Int64
-            "101": pl.Int32,  # open Int64
-            # "102": pl.Int32,  # high Int64
-            # "103": pl.Int32,  # low Int64
-            "104": pl.Int32,  # last Int64
-            "108": pl.List(pl.Int32),  # ask_prices Int64[10]
-            "109": pl.List(pl.Int32),  # ask_volumes Int64[10]
-            "110": pl.List(pl.Int32),  # bid_prices Int64[10]
-            "111": pl.List(pl.Int32),  # bid_volumes Int64[10]
-            "112": pl.Int32,  # num_trades Int64
-            "113": pl.Int64,  # volume int64
-            "114": pl.Int64,  # amount Int64
-            "115": pl.Int64,  # total_bid_volume int64
-            "116": pl.Int32,  # bid_avg_price Int64
-            "118": pl.Int64,  # total_ask_volume int64
-            "119": pl.Int32,  # ask_avg_price Int64
-            # "123": pl.Int32,  # high_limit Int64, since 2018
-            # "124": pl.Int32,  # low_limit Int64, since 2018
-        }
-        name_mapping = {
-            "0": "code",
-            "3": "date",
-            "4": "time",
-            "100": "preclose",
-            "101": "open",
-            # "102": "high",
-            # "103": "low",
-            "104": "last",
-            "108": "ask_prices",
-            "109": "ask_volumes",
-            "110": "bid_prices",
-            "111": "bid_volumes",
-            "112": "num_trades",
-            "113": "volume",
-            "114": "amount",
-            "115": "total_bid_volume",
-            "116": "bid_avg_price",
-            "118": "total_ask_volume",
-            "119": "ask_avg_price",
-            # "123": "high_limit",
-            # "124": "low_limit",
-        }
+    schema = {
+        "0": pl.Utf8,  # code char[16]
+        "3": pl.Int32,  # date int32
+        "4": pl.Int32,  # time int32
+        "100": pl.Int32,  # preclose Int64
+        "101": pl.Int32,  # open Int64
+        "102": pl.Int32,  # high Int64
+        "103": pl.Int32,  # low Int64
+        "104": pl.Int32,  # last Int64
+        "108": pl.List(pl.Int32),  # ask_prices Int64[10]
+        "109": pl.List(pl.Int32),  # ask_volumes Int64[10]
+        "110": pl.List(pl.Int32),  # bid_prices Int64[10]
+        "111": pl.List(pl.Int32),  # bid_volumes Int64[10]
+        "112": pl.Int32,  # num_trades Int64
+        "113": pl.Int64,  # volume int64
+        "114": pl.Int64,  # amount Int64
+        "115": pl.Int64,  # total_bid_volume int64
+        "116": pl.Int32,  # bid_avg_price Int64
+        "118": pl.Int64,  # total_ask_volume int64
+        "119": pl.Int32,  # ask_avg_price Int64
+    }
+    name_mapping = {
+        "0": "code",
+        "3": "date",
+        "4": "time",
+        "100": "preclose",
+        "101": "open",
+        "102": "high",
+        "103": "low",
+        "104": "last",
+        "108": "ask_prices",
+        "109": "ask_volumes",
+        "110": "bid_prices",
+        "111": "bid_volumes",
+        "112": "num_trades",
+        "113": "volume",
+        "114": "amount",
+        "115": "total_bid_volume",
+        "116": "bid_avg_price",
+        "118": "total_ask_volume",
+        "119": "ask_avg_price",
+    }
 
-    if secu_type == "etf":
-        line = f"sh{eq_line}:@510.*|@511.*|@512.*|@513.*|@515.*|@516.*|@517.*|@518.*|@560.*|@561.*|@562.*|@563.*|@588.*+sz{eq_line}:@159.*"
-    else:
-        line = f"sh{eq_line}:@60.*|@68.*+sz{eq_line}:@00.*|@30.*"
-    hq_logger.debug(f"quote line: {line}")
-
-    q = Queue(maxsize=qsize)
+    q = Queue(maxsize=64)
     hq_app = HistoryApp(q)
     threading.Thread(target=worker, args=(q, schema, name_mapping, out_dir), daemon=True).start()
     hq_app.start()
@@ -200,7 +153,7 @@ def download(secu_type: str, quote_type: str, target_dates: list[int]):
             startDate=target_date,
             startTime=92500000,
             endDate=target_date,
-            endTime=150100000,
+            endTime=93000000,
             rate=-1,  # unsorted
         )
         hq_app.wait()
@@ -209,7 +162,7 @@ def download(secu_type: str, quote_type: str, target_dates: list[int]):
     hq_logger.debug(f"worker finish processing {target_dates[0]}~{target_dates[-1]}")
     hq_app.stop()
     hq_logger.info("hq_app disconnect from server.")
-    chatbot.send_msg(f"finish {secu_type}:{quote_type} from {target_dates[0]} to {target_dates[-1]}")
+    chatbot.send_msg(f"finish {line} from {target_dates[0]} to {target_dates[-1]}")
 
 
 def get_target_dates(ym_start: int, ym_end: int) -> list[int]:
@@ -224,15 +177,14 @@ def get_target_dates(ym_start: int, ym_end: int) -> list[int]:
 
 def process(args):
     target_dates = get_target_dates(args.ym_start, args.ym_end)
-    download(args.secu_type, args.quote_type, target_dates)
+    download(args.line, target_dates)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="history quotes downloader")
     parser.add_argument("-yms", type=int, required=True, dest="ym_start", help="start year-month, 200701")
     parser.add_argument("-yme", type=int, required=True, dest="ym_end", help="end year-month, 202412")
-    parser.add_argument("-st", type=str, required=True, dest="secu_type", choices=["stock", "etf"], help="security type")
-    parser.add_argument("-qt", type=str, required=True, dest="quote_type", choices=["tick", "kl1m"], help="quote type")
+    parser.add_argument("-line", type=str, required=True, dest="line", choices=["shl2:tick:510050", "shl2:tick:600651", "szl2:tick:159902", "szl2:tick:000001"], help="quote line")
 
     args = parser.parse_args()
     process(args)
