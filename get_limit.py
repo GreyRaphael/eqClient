@@ -82,7 +82,7 @@ def worker(q: Queue, schema_mapping: dict, name_mapping: dict, output_dir: str):
                 mem_file.write(quote.encode())
                 mem_file.write(b"\n")
 
-            df = pl.read_ndjson(mem_file, schema=schema_mapping).rename(name_mapping)
+            df = pl.read_ndjson(mem_file, schema_overrides=schema_mapping).rename(name_mapping)
 
         current_date = df.item(0, "date")
         os.makedirs(f"{output_dir}/{current_date}", exist_ok=True)
@@ -119,7 +119,7 @@ def download(secu_type: str, quote_type: str, target_dates: list[int]):
     chatbot.send_msg(f"begin {secu_type}:{quote_type} from {target_dates[0]} to {target_dates[-1]}")
     hq_logger = get_logger("hq")
 
-    out_dir = f"{secu_type}/{quote_type}"  # etf/tick/
+    out_dir = f"{secu_type}-limit/{quote_type}"  # etf/tick/
     hq_logger.debug(f"output dir: {out_dir}")
 
     if quote_type == "kl1m":
@@ -172,8 +172,8 @@ def download(secu_type: str, quote_type: str, target_dates: list[int]):
             "116": pl.Int32,  # bid_avg_price Int64
             "118": pl.Int64,  # total_ask_volume int64
             "119": pl.Int32,  # ask_avg_price Int64
-            # "123": pl.Int32,  # high_limit Int64, since 2018
-            # "124": pl.Int32,  # low_limit Int64, since 2018
+            "123": pl.Int32,  # high_limit Int64, since 2018
+            "124": pl.Int32,  # low_limit Int64, since 2018
         }
         name_mapping = {
             "0": "code",
@@ -195,8 +195,8 @@ def download(secu_type: str, quote_type: str, target_dates: list[int]):
             "116": "bid_avg_price",
             "118": "total_ask_volume",
             "119": "ask_avg_price",
-            # "123": "high_limit",
-            # "124": "low_limit",
+            "123": "high_limit",
+            "124": "low_limit",
         }
 
     sh_line, sz_line = get_codes(secu_type)
@@ -215,7 +215,7 @@ def download(secu_type: str, quote_type: str, target_dates: list[int]):
             startDate=target_date,
             startTime=92500000,
             endDate=target_date,
-            endTime=150100000,
+            endTime=93000000,
             rate=-1,  # unsorted
         )
         hq_app.wait()
@@ -227,25 +227,14 @@ def download(secu_type: str, quote_type: str, target_dates: list[int]):
     chatbot.send_msg(f"finish {secu_type}:{quote_type} from {target_dates[0]} to {target_dates[-1]}")
 
 
-def get_target_dates(ym_start: int, ym_end: int) -> list[int]:
-    year_start = ym_start // 100
-    year_end = ym_end // 100
-    target_dates = []
-    for year in range(year_start, year_end + 1):
-        with open(f"calendar/{year}.json", "r") as file:
-            target_dates += json.load(file)
-    return [i for i in target_dates if ym_start * 100 < i <= ym_end * 100 + 31]
-
-
 def process(args):
-    target_dates = get_target_dates(args.ym_start, args.ym_end)
+    target_dates = [args.target_dt]
     download(args.secu_type, args.quote_type, target_dates)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="history quotes downloader")
-    parser.add_argument("-yms", type=int, required=True, dest="ym_start", help="start year-month, 200701")
-    parser.add_argument("-yme", type=int, required=True, dest="ym_end", help="end year-month, 202412")
+    parser.add_argument("-dt", type=int, required=True, dest="target_dt", help="target date 20240614")
     parser.add_argument("-st", type=str, required=True, dest="secu_type", choices=["stock", "etf"], help="security type")
     parser.add_argument("-qt", type=str, required=True, dest="quote_type", choices=["tick", "kl1m"], help="quote type")
 
