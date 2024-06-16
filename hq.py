@@ -91,6 +91,23 @@ def worker(q: Queue, schema_mapping: dict, name_mapping: dict, output_dir: str):
         hq_logger.debug(f"===>finish {len(quotes)} quotes of {current_date}")
 
 
+def get_codes(secu_type: str) -> tuple:
+    """get code line from json file"""
+    if secu_type == "etf":
+        with open("codes/etf.json") as file:
+            j_codes = json.load(file)
+
+        # sh_line = "@510.*|@511.*|@512.*|@513.*|@515.*|@516.*|@517.*|@518.*|@560.*|@561.*|@562.*|@563.*|@588.*" # bad
+        sh_line = "|".join(j_codes["sh"])
+        # sz_line = "@159.*" # bad
+        sz_line = "|".join(j_codes["sz"])
+    else:
+        sh_line = "@60.*|@68.*"
+        sz_line = "@00.*|@30.*"
+
+    return sh_line, sz_line
+
+
 def download(secu_type: str, quote_type: str, target_dates: list[int]):
     """
     Download the quotes in the target_dates list, where the quotes meet the secu_type and quote_type.\n\n
@@ -182,10 +199,8 @@ def download(secu_type: str, quote_type: str, target_dates: list[int]):
             # "124": "low_limit",
         }
 
-    if secu_type == "etf":
-        line = f"sh{eq_line}:@510.*|@511.*|@512.*|@513.*|@515.*|@516.*|@517.*|@518.*|@560.*|@561.*|@562.*|@563.*|@588.*+sz{eq_line}:@159.*"
-    else:
-        line = f"sh{eq_line}:@60.*|@68.*+sz{eq_line}:@00.*|@30.*"
+    sh_line, sz_line = get_codes(secu_type)
+    line = f"sh{eq_line}:{sh_line}+sz{eq_line}:{sz_line}"
     hq_logger.debug(f"quote line: {line}")
 
     q = Queue(maxsize=qsize)
