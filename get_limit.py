@@ -30,7 +30,7 @@ class HistoryApp(eqapi.HqApplication):
         hq_setting = self._read_config("hq.cfg")
         super().__init__([hq_setting, hq_setting])
         self._quotes_q = q
-        self.eq_logger = get_logger("eq", fmt="%(asctime)s - %(message)s")
+        self.eq_logger = get_logger("eqlimit", fmt="%(asctime)s - %(message)s")
         self.hq_logger = logging.getLogger("hq")
 
     def _read_config(self, configfile: str) -> eqapi.EqSetting:
@@ -117,7 +117,7 @@ def download(secu_type: str, quote_type: str, target_dates: list[int]):
         target_dates: list[int], example: [20220101, 20220102, ...]
     """
     chatbot.send_msg(f"begin {secu_type}:{quote_type} from {target_dates[0]} to {target_dates[-1]}")
-    hq_logger = get_logger("hq")
+    hq_logger = get_logger("hqlimit")
 
     out_dir = f"{secu_type}-limit/{quote_type}"  # etf/tick/
     hq_logger.debug(f"output dir: {out_dir}")

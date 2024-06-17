@@ -30,7 +30,7 @@ class HistoryApp(eqapi.HqApplication):
         hq_setting = self._read_config("hq.cfg")
         super().__init__([hq_setting, hq_setting])
         self._quotes_q = q
-        self.eq_logger = get_logger("eq", fmt="%(asctime)s - %(message)s")
+        self.eq_logger = get_logger("eqcols", fmt="%(asctime)s - %(message)s")
         self.hq_logger = logging.getLogger("hq")
 
     def _read_config(self, configfile: str) -> eqapi.EqSetting:
@@ -93,7 +93,7 @@ def worker(q: Queue, schema_mapping: dict, name_mapping: dict, output_dir: str):
 
 def download(line: str, target_dates: list[int]):
     chatbot.send_msg(f"begin {line} from {target_dates[0]} to {target_dates[-1]}")
-    hq_logger = get_logger("hq")
+    hq_logger = get_logger("hqcols")
 
     out_dir = line.replace(":", "_")  # shl2_tick_510050
     hq_logger.debug(f"output dir: {out_dir}, quote line: {line}")
