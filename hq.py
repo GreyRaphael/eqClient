@@ -235,8 +235,8 @@ def download(secu_type: str, quote_type: str, target_dates: list[int]):
 
 
 def get_target_dates(date_start: int, date_end: int) -> list[int]:
-    year_start = date_start // 100
-    year_end = date_end // 100
+    year_start = date_start // 10000
+    year_end = date_end // 10000
     target_dates = []
     for year in range(year_start, year_end + 1):
         with open(f"calendar/{year}.json", "r") as file:
