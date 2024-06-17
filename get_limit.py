@@ -82,7 +82,7 @@ def worker(q: Queue, schema_mapping: dict, name_mapping: dict, output_dir: str):
                 mem_file.write(quote.encode())
                 mem_file.write(b"\n")
 
-            df = pl.read_ndjson(mem_file, schema_overrides=schema_mapping).rename(name_mapping)
+            df = pl.read_ndjson(mem_file, schema=schema_mapping).rename(name_mapping)
 
         current_date = df.item(0, "date")
         os.makedirs(f"{output_dir}/{current_date}", exist_ok=True)
@@ -158,20 +158,6 @@ def download(secu_type: str, quote_type: str, target_dates: list[int]):
             "4": pl.Int32,  # time int32
             "100": pl.Int32,  # preclose Int64
             "101": pl.Int32,  # open Int64
-            # "102": pl.Int32,  # high Int64
-            # "103": pl.Int32,  # low Int64
-            "104": pl.Int32,  # last Int64
-            "108": pl.List(pl.Int32),  # ask_prices Int64[10]
-            "109": pl.List(pl.Int32),  # ask_volumes Int64[10]
-            "110": pl.List(pl.Int32),  # bid_prices Int64[10]
-            "111": pl.List(pl.Int32),  # bid_volumes Int64[10]
-            "112": pl.Int32,  # num_trades Int64
-            "113": pl.Int64,  # volume int64
-            "114": pl.Int64,  # amount Int64
-            "115": pl.Int64,  # total_bid_volume int64
-            "116": pl.Int32,  # bid_avg_price Int64
-            "118": pl.Int64,  # total_ask_volume int64
-            "119": pl.Int32,  # ask_avg_price Int64
             "123": pl.Int32,  # high_limit Int64, since 2018
             "124": pl.Int32,  # low_limit Int64, since 2018
         }
@@ -181,20 +167,6 @@ def download(secu_type: str, quote_type: str, target_dates: list[int]):
             "4": "time",
             "100": "preclose",
             "101": "open",
-            # "102": "high",
-            # "103": "low",
-            "104": "last",
-            "108": "ask_prices",
-            "109": "ask_volumes",
-            "110": "bid_prices",
-            "111": "bid_volumes",
-            "112": "num_trades",
-            "113": "volume",
-            "114": "amount",
-            "115": "total_bid_volume",
-            "116": "bid_avg_price",
-            "118": "total_ask_volume",
-            "119": "ask_avg_price",
             "123": "high_limit",
             "124": "low_limit",
         }
@@ -213,9 +185,9 @@ def download(secu_type: str, quote_type: str, target_dates: list[int]):
         hq_app.get(
             line=line,
             startDate=target_date,
-            startTime=92500000,
+            startTime=93000000,
             endDate=target_date,
-            endTime=93000000,
+            endTime=93015000,
             rate=-1,  # unsorted
         )
         hq_app.wait()
