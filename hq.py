@@ -158,8 +158,8 @@ def download(secu_type: str, quote_type: str, target_dates: list[int]):
             "4": pl.Int32,  # time int32
             "100": pl.Int32,  # preclose Int64
             "101": pl.Int32,  # open Int64
-            # "102": pl.Int32,  # high Int64
-            # "103": pl.Int32,  # low Int64
+            "102": pl.Int32,  # high Int64
+            "103": pl.Int32,  # low Int64
             "104": pl.Int32,  # last Int64
             "108": pl.List(pl.Int32),  # ask_prices Int64[10]
             "109": pl.List(pl.Int32),  # ask_volumes Int64[10]
@@ -172,8 +172,11 @@ def download(secu_type: str, quote_type: str, target_dates: list[int]):
             "116": pl.Int32,  # bid_avg_price Int64
             "118": pl.Int64,  # total_ask_volume int64
             "119": pl.Int32,  # ask_avg_price Int64
-            # "123": pl.Int32,  # high_limit Int64, since 2018
-            # "124": pl.Int32,  # low_limit Int64, since 2018
+            "123": pl.Int32,  # high_limit Int64, since 2018
+            "124": pl.Int32,  # low_limit Int64, since 2018
+            "151": pl.List(pl.Int32),  # bid_nums
+            "153": pl.List(pl.Int32),  # ask_nums
+            "201": pl.Int32,
         }
         name_mapping = {
             "0": "code",
@@ -181,8 +184,8 @@ def download(secu_type: str, quote_type: str, target_dates: list[int]):
             "4": "time",
             "100": "preclose",
             "101": "open",
-            # "102": "high",
-            # "103": "low",
+            "102": "high",
+            "103": "low",
             "104": "last",
             "108": "ask_prices",
             "109": "ask_volumes",
@@ -195,8 +198,11 @@ def download(secu_type: str, quote_type: str, target_dates: list[int]):
             "116": "bid_avg_price",
             "118": "total_ask_volume",
             "119": "ask_avg_price",
-            # "123": "high_limit",
-            # "124": "low_limit",
+            "123": "high_limit",
+            "124": "low_limit",
+            "151": "bid_nums",
+            "153": "ask_nums",
+            "201": "iopv",
         }
 
     sh_line, sz_line = get_codes(secu_type)
