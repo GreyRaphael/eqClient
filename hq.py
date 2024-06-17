@@ -234,25 +234,25 @@ def download(secu_type: str, quote_type: str, target_dates: list[int]):
     chatbot.send_msg(f"finish {secu_type}:{quote_type} from {target_dates[0]} to {target_dates[-1]}")
 
 
-def get_target_dates(ym_start: int, ym_end: int) -> list[int]:
-    year_start = ym_start // 100
-    year_end = ym_end // 100
+def get_target_dates(date_start: int, date_end: int) -> list[int]:
+    year_start = date_start // 100
+    year_end = date_end // 100
     target_dates = []
     for year in range(year_start, year_end + 1):
         with open(f"calendar/{year}.json", "r") as file:
             target_dates += json.load(file)
-    return [i for i in target_dates if ym_start * 100 < i <= ym_end * 100 + 31]
+    return [i for i in target_dates if date_start <= i <= date_end]
 
 
 def process(args):
-    target_dates = get_target_dates(args.ym_start, args.ym_end)
+    target_dates = get_target_dates(args.date_start, args.date_end)
     download(args.secu_type, args.quote_type, target_dates)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="history quotes downloader")
-    parser.add_argument("-yms", type=int, required=True, dest="ym_start", help="start year-month, 200701")
-    parser.add_argument("-yme", type=int, required=True, dest="ym_end", help="end year-month, 202412")
+    parser.add_argument("-dts", type=int, required=True, dest="date_start", help="start date, 20070101")
+    parser.add_argument("-dte", type=int, required=True, dest="date_end", help="end date, 20241231")
     parser.add_argument("-st", type=str, required=True, dest="secu_type", choices=["stock", "etf"], help="security type")
     parser.add_argument("-qt", type=str, required=True, dest="quote_type", choices=["tick", "kl1m"], help="quote type")
 
