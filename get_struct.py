@@ -82,9 +82,9 @@ def worker(q: Queue, schema_mapping: dict, name_mapping: dict, output_dir: str):
                 mem_file.write(quote.encode())
                 mem_file.write(b"\n")
 
-            df = pl.read_ndjson(mem_file, schema_overrides=schema_mapping).rename(name_mapping)
+            df = pl.read_ndjson(mem_file)
 
-        current_date = df.item(0, "date")
+        current_date = df.item(0, "3")
         os.makedirs(f"{output_dir}/{current_date}", exist_ok=True)
         df.write_parquet(f"{output_dir}/{current_date}/{count:08d}.parquet")
         q.task_done()
@@ -98,52 +98,9 @@ def download(line: str, target_dates: list[int]):
     out_dir = line.replace(":", "_")  # shl2_tick_510050
     hq_logger.debug(f"output dir: {out_dir}, quote line: {line}")
 
-    schema = {
-        "0": pl.Utf8,  # code char[16]
-        "3": pl.Int32,  # date int32
-        "4": pl.Int32,  # time int32
-        "100": pl.Int32,  # preclose Int64
-        "101": pl.Int32,  # open Int64
-        "102": pl.Int32,  # high Int64
-        "103": pl.Int32,  # low Int64
-        "104": pl.Int32,  # last Int64
-        "108": pl.List(pl.Int32),  # ask_prices Int64[10]
-        "109": pl.List(pl.Int32),  # ask_volumes Int64[10]
-        "110": pl.List(pl.Int32),  # bid_prices Int64[10]
-        "111": pl.List(pl.Int32),  # bid_volumes Int64[10]
-        "112": pl.Int32,  # num_trades Int64
-        "113": pl.Int64,  # volume int64
-        "114": pl.Int64,  # amount Int64
-        "115": pl.Int64,  # total_bid_volume int64
-        "116": pl.Int32,  # bid_avg_price Int64
-        "118": pl.Int64,  # total_ask_volume int64
-        "119": pl.Int32,  # ask_avg_price Int64
-    }
-    name_mapping = {
-        "0": "code",
-        "3": "date",
-        "4": "time",
-        "100": "preclose",
-        "101": "open",
-        "102": "high",
-        "103": "low",
-        "104": "last",
-        "108": "ask_prices",
-        "109": "ask_volumes",
-        "110": "bid_prices",
-        "111": "bid_volumes",
-        "112": "num_trades",
-        "113": "volume",
-        "114": "amount",
-        "115": "total_bid_volume",
-        "116": "bid_avg_price",
-        "118": "total_ask_volume",
-        "119": "ask_avg_price",
-    }
-
     q = Queue(maxsize=64)
     hq_app = HistoryApp(q)
-    threading.Thread(target=worker, args=(q, schema, name_mapping, out_dir), daemon=True).start()
+    threading.Thread(target=worker, args=(q, out_dir), daemon=True).start()
     hq_app.start()
 
     for target_date in target_dates:
