@@ -151,9 +151,9 @@ def download(line: str, target_dates: list[int]):
         hq_app.get(
             line=line,
             startDate=target_date,
-            startTime=92500000,
+            startTime=93000000,
             endDate=target_date,
-            endTime=93000000,
+            endTime=93015000,
             rate=-1,  # unsorted
         )
         hq_app.wait()
