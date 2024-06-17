@@ -176,7 +176,7 @@ def download(secu_type: str, quote_type: str, target_dates: list[int]):
             "124": pl.Int32,  # low_limit Int64, since 2018
             "151": pl.List(pl.Int32),  # bid_nums
             "153": pl.List(pl.Int32),  # ask_nums
-            "201": pl.Int32,
+            "201": pl.Int32,  # iopv (only for etf, stock is null)
         }
         name_mapping = {
             "0": "code",
