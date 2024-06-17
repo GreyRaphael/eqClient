@@ -75,8 +75,8 @@ def worker(q: Queue, schema_mapping: dict, name_mapping: dict, output_dir: str):
         count += 1
 
         # sort the quotes by length, long -> short
-        # quotes.sort(key=len, reverse=True)
-        quotes.sort(key=lambda x: (x[19:20], len(x)), reverse=True)
+        quotes.sort(key=len, reverse=True)
+        # quotes.sort(key=lambda x: (x[19:20], len(x)), reverse=True)
 
         with io.BytesIO() as mem_file:
             for quote in quotes:
@@ -98,15 +98,15 @@ def get_codes(secu_type: str) -> tuple:
         with open("codes/etf.json") as file:
             j_codes = json.load(file)
 
-        # sh_line = "@510.*|@511.*|@512.*|@513.*|@515.*|@516.*|@517.*|@518.*|@560.*|@561.*|@562.*|@563.*|@588.*" # bad
-        sh_line = "|".join(j_codes["sh"])
-        # sz_line = "@159.*" # bad
-        sz_line = "|".join(j_codes["sz"])
+        # sh_codes = "@510.*|@511.*|@512.*|@513.*|@515.*|@516.*|@517.*|@518.*|@560.*|@561.*|@562.*|@563.*|@588.*" # bad
+        sh_codes = "|".join(j_codes["sh"])
+        # sz_codes = "@159.*" # bad
+        sz_codes = "|".join(j_codes["sz"])
     else:
-        sh_line = "@60.*|@68.*"
-        sz_line = "@00.*|@30.*"
+        sh_codes = "@60.*|@68.*"
+        sz_codes = "@00.*|@30.*"
 
-    return sh_line, sz_line
+    return sh_codes, sz_codes
 
 
 def download(secu_type: str, quote_type: str, target_dates: list[int]):
@@ -206,9 +206,11 @@ def download(secu_type: str, quote_type: str, target_dates: list[int]):
             "201": "iopv",
         }
 
-    sh_line, sz_line = get_codes(secu_type)
-    line = f"sh{eq_line}:{sh_line}+sz{eq_line}:{sz_line}"
-    hq_logger.debug(f"quote line: {line}")
+    sh_codes, sz_codes = get_codes(secu_type)
+    sh_line = f"sh{eq_line}:{sh_codes}"
+    hq_logger.debug(f"quote line: {sh_line}")
+    sz_line = f"sz{eq_line}:{sz_codes}"
+    hq_logger.debug(f"quote line: {sz_line}")
 
     q = Queue(maxsize=qsize)
     hq_app = HistoryApp(q)
@@ -217,8 +219,19 @@ def download(secu_type: str, quote_type: str, target_dates: list[int]):
 
     for target_date in target_dates:
         hq_logger.debug(f"hq_app begin {target_date}")
+        # sh
         hq_app.get(
-            line=line,
+            line=sh_line,
+            startDate=target_date,
+            startTime=92500000,
+            endDate=target_date,
+            endTime=150100000,
+            rate=-1,  # unsorted
+        )
+        hq_app.wait()
+        # sz
+        hq_app.get(
+            line=sz_line,
             startDate=target_date,
             startTime=92500000,
             endDate=target_date,
