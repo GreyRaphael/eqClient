@@ -185,9 +185,9 @@ def download(secu_type: str, quote_type: str, target_dates: list[int]):
         hq_app.get(
             line=line,
             startDate=target_date,
-            startTime=93000000,
+            startTime=130000000,
             endDate=target_date,
-            endTime=93015000,
+            endTime=131000000,
             rate=-1,  # unsorted
         )
         hq_app.wait()
