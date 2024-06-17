@@ -75,7 +75,8 @@ def worker(q: Queue, schema_mapping: dict, name_mapping: dict, output_dir: str):
         count += 1
 
         # sort the quotes by length, long -> short
-        quotes.sort(key=len, reverse=True)
+        # quotes.sort(key=len, reverse=True)
+        quotes.sort(key=lambda x: (x[19:20], len(x)), reverse=True)
 
         with io.BytesIO() as mem_file:
             for quote in quotes:
@@ -158,8 +159,8 @@ def download(secu_type: str, quote_type: str, target_dates: list[int]):
             "4": pl.Int32,  # time int32
             "100": pl.Int32,  # preclose Int64
             "101": pl.Int32,  # open Int64
-            "102": pl.Int32,  # high Int64
-            "103": pl.Int32,  # low Int64
+            # "102": pl.Int32,  # high Int64
+            # "103": pl.Int32,  # low Int64
             "104": pl.Int32,  # last Int64
             "108": pl.List(pl.Int32),  # ask_prices Int64[10]
             "109": pl.List(pl.Int32),  # ask_volumes Int64[10]
@@ -184,8 +185,8 @@ def download(secu_type: str, quote_type: str, target_dates: list[int]):
             "4": "time",
             "100": "preclose",
             "101": "open",
-            "102": "high",
-            "103": "low",
+            # "102": "high",
+            # "103": "low",
             "104": "last",
             "108": "ask_prices",
             "109": "ask_volumes",
