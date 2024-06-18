@@ -75,8 +75,8 @@ def worker(q: Queue, schema_mapping: dict, name_mapping: dict, output_dir: str):
         count += 1
 
         # sort the quotes by length, long -> short
-        quotes.sort(key=len, reverse=True)
-        # quotes.sort(key=lambda x: (x[19:20], len(x)), reverse=True)
+        # quotes.sort(key=len, reverse=True)
+        quotes.sort(key=lambda x: x.find('],"153":['), reverse=True)
 
         with io.BytesIO() as mem_file:
             for quote in quotes:
