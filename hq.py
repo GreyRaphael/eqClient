@@ -76,14 +76,21 @@ def worker(q: Queue, schema_mapping: dict, name_mapping: dict, output_dir: str):
 
         # sort the quotes by length, long -> short
         # quotes.sort(key=len, reverse=True)
-        quotes.sort(key=lambda x: (x.find('],"153":['), x.count('":')), reverse=True)
+        # quotes.sort(key=lambda x: (x.find('],"153":['), x.count('":')), reverse=True)
+        quotes.sort(key=lambda x: x.find('],"153":['), reverse=True)
 
         with io.BytesIO() as mem_file:
             for quote in quotes:
                 mem_file.write(quote.encode())
                 mem_file.write(b"\n")
 
-            df = pl.read_ndjson(mem_file, schema=schema_mapping).rename(name_mapping)
+            try:
+                df = pl.read_ndjson(mem_file, schema=schema_mapping).rename(name_mapping)
+            except Exception as e:
+                chatbot.send_msg(f"read_ndjson parse error, {e}, exiting.")
+                with open("mem_file.json", "wb") as file:
+                    file.write(mem_file.getbuffer())
+                os._exit(0)
 
         current_date = df.item(0, "date")
         os.makedirs(f"{output_dir}/{current_date}", exist_ok=True)
