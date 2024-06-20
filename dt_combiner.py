@@ -17,6 +17,9 @@ def combine_tick(target_date: int, in_dir: str, out_dir: str):
             pl.col("preclose").cast(pl.UInt32),
             pl.col("open").cast(pl.UInt32),
             pl.col("last").cast(pl.UInt32),
+            pl.col("iopv").fill_null(0).cast(pl.UInt32),
+            pl.col("high_limit").fill_null(0).cast(pl.UInt32),
+            pl.col("low_limit").fill_null(0).cast(pl.UInt32),
             pl.col("num_trades").cast(pl.UInt32).fill_null(0),
             pl.col("volume").cast(pl.UInt64).fill_null(0),
             pl.col("total_ask_volume").cast(pl.UInt64).fill_null(0).alias("tot_av"),
@@ -28,6 +31,8 @@ def combine_tick(target_date: int, in_dir: str, out_dir: str):
             *[pl.col("bid_prices").list.get(i).cast(pl.UInt32).fill_null(0).alias(f"bp{i}") for i in range(10)],
             *[pl.col("ask_volumes").list.get(i).cast(pl.UInt32).fill_null(0).alias(f"av{i}") for i in range(10)],
             *[pl.col("bid_volumes").list.get(i).cast(pl.UInt32).fill_null(0).alias(f"bv{i}") for i in range(10)],
+            *[pl.col("ask_nums").list.get(i).cast(pl.UInt32).fill_null(0).alias(f"an{i}") for i in range(10)],
+            *[pl.col("bid_nums").list.get(i).cast(pl.UInt32).fill_null(0).alias(f"bn{i}") for i in range(10)],
         )
         .sort(["code", "dt"])
         .collect()
