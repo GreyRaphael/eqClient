@@ -102,13 +102,13 @@ def worker(q: Queue, schema_mapping: dict, name_mapping: dict, output_dir: str):
 def get_codes(secu_type: str) -> tuple:
     """get code line from json file"""
     if secu_type == "etf":
-        with open("codes/etf.json") as file:
-            j_codes = json.load(file)
+        # with open("codes/etf.json") as file:
+        #     j_codes = json.load(file)
 
-        # sh_codes = "@510.*|@511.*|@512.*|@513.*|@515.*|@516.*|@517.*|@518.*|@560.*|@561.*|@562.*|@563.*|@588.*" # bad
-        sh_codes = "|".join(j_codes["sh"])
-        # sz_codes = "@159.*" # bad
-        sz_codes = "|".join(j_codes["sz"])
+        sh_codes = "@510.*|@511.*|@512.*|@513.*|@515.*|@516.*|@517.*|@518.*|@560.*|@561.*|@562.*|@563.*|@588.*"  # bad
+        # sh_codes = "|".join(j_codes["sh"])
+        sz_codes = "@159.*"  # bad
+        # sz_codes = "|".join(j_codes["sz"])
     else:
         sh_codes = "@60.*|@68.*"
         sz_codes = "@00.*|@30.*"
