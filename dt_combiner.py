@@ -27,12 +27,12 @@ def combine_tick(target_date: int, in_dir: str, out_dir: str):
             pl.col("amount").cast(pl.UInt64).fill_null(0),
             pl.col("ask_avg_price").cast(pl.UInt32).alias("avg_ap"),
             pl.col("bid_avg_price").cast(pl.UInt32).alias("avg_bp"),
-            *[pl.col("ask_prices").list.get(i).cast(pl.UInt32).fill_null(0).alias(f"ap{i}") for i in range(10)],
-            *[pl.col("bid_prices").list.get(i).cast(pl.UInt32).fill_null(0).alias(f"bp{i}") for i in range(10)],
-            *[pl.col("ask_volumes").list.get(i).cast(pl.UInt32).fill_null(0).alias(f"av{i}") for i in range(10)],
-            *[pl.col("bid_volumes").list.get(i).cast(pl.UInt32).fill_null(0).alias(f"bv{i}") for i in range(10)],
-            *[pl.col("ask_nums").list.get(i).cast(pl.UInt32).fill_null(0).alias(f"an{i}") for i in range(10)],
-            *[pl.col("bid_nums").list.get(i).cast(pl.UInt32).fill_null(0).alias(f"bn{i}") for i in range(10)],
+            *[pl.col("ask_prices").list.get(i, null_on_oob=True).cast(pl.UInt32).fill_null(0).alias(f"ap{i}") for i in range(10)],
+            *[pl.col("bid_prices").list.get(i, null_on_oob=True).cast(pl.UInt32).fill_null(0).alias(f"bp{i}") for i in range(10)],
+            *[pl.col("ask_volumes").list.get(i, null_on_oob=True).cast(pl.UInt32).fill_null(0).alias(f"av{i}") for i in range(10)],
+            *[pl.col("bid_volumes").list.get(i, null_on_oob=True).cast(pl.UInt32).fill_null(0).alias(f"bv{i}") for i in range(10)],
+            *[pl.col("ask_nums").list.get(i, null_on_oob=True).cast(pl.UInt32).fill_null(0).alias(f"an{i}") for i in range(10)],
+            *[pl.col("bid_nums").list.get(i, null_on_oob=True).cast(pl.UInt32).fill_null(0).alias(f"bn{i}") for i in range(10)],
         )
         .sort(["code", "dt"])
         .collect()
