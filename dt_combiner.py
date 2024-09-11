@@ -5,6 +5,46 @@ import os
 from utils import chatbot
 
 
+def combine_trade(target_date: int, in_dir: str, out_dir: str):
+    in_files = f"{in_dir}/{target_date}/*.parquet"
+    df = (
+        pl.scan_parquet(in_files)
+        .select(
+            pl.col("code").cast(pl.UInt32),
+            (pl.col("date").cast(pl.Utf8) + pl.col("time").cast(pl.Utf8).str.pad_start(9, "0")).str.to_datetime("%Y%m%d%H%M%S%3f").alias("dt"),
+            pl.col("seq_no").cast(pl.UInt64),
+            pl.col("price").cast(pl.UInt32),
+            pl.col("volume").cast(pl.UInt64),
+            # pl.col('bs_flag'), // UInt8
+            pl.col("ask_seq_no").cast(pl.UInt64),
+            pl.col("bid_seq_no").cast(pl.UInt64),
+            pl.col("sh_biz_index").cast(pl.UInt64),
+        )
+        .sort(["code", "dt"])
+        .collect()
+    )
+
+
+def combine_order(target_date: int, in_dir: str, out_dir: str):
+    in_files = f"{in_dir}/{target_date}/*.parquet"
+    df = (
+        pl.scan_parquet(in_files)
+        .select(
+            pl.col("code").cast(pl.UInt32),
+            (pl.col("date").cast(pl.Utf8) + pl.col("time").cast(pl.Utf8).str.pad_start(9, "0")).str.to_datetime("%Y%m%d%H%M%S%3f").alias("dt"),
+            pl.col("seq_no").cast(pl.UInt64),
+            pl.col("price").cast(pl.UInt32),
+            pl.col("volume").cast(pl.UInt64),
+            # pl.col("bs_flag"), // UInt8
+            # pl.col("order_type"), // UInt8
+            pl.col("orgin_seq_no").cast(pl.UInt64),
+            pl.col("sh_biz_index").cast(pl.UInt64),
+        )
+        .sort(["code", "dt"])
+        .collect()
+    )
+
+
 def combine_tick(target_date: int, in_dir: str, out_dir: str):
     in_files = f"{in_dir}/{target_date}/*.parquet"
 
