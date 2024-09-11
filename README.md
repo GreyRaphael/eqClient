@@ -122,38 +122,38 @@ eqapi
 ```cpp
 struct Trade
 {
-  char security_id[16];
-  std::uint16_t market;
-  std::int32_t date;
-  std::int32_t time;
-  std::uint8_t quote_type;
-  std::int8_t eq_tpc;                        // eqapi trading phase code
-  std::int64_t index;
-  std::int64_t price;
-  std::int64_t volume;
-  char bsFlag;
-  std::int64_t sellNo;
-  std::int64_t buyNo;
-  std::int16_t type;                          // 港股成交类型
-  std::int32_t channel;
-  std::int64_t biz_index;                     // sh biz index
+  char security_id[16];         // 0
+  std::uint16_t market;         // 1
+  std::int32_t date;            // 3
+  std::int32_t time;            // 4
+  std::uint8_t quote_type;      // 5
+  std::int8_t eq_tpc;           // 20 eqapi trading phase code
+  std::int64_t index;           // 600
+  std::int64_t price;           // 601
+  std::int64_t volume;          // 602
+  char bsFlag;                  // 604
+  std::int64_t sellNo;          // 605
+  std::int64_t buyNo;           // 606
+  std::int16_t type;            // 607, 港股成交类型
+  std::int32_t channel;         // 621
+  std::int64_t biz_index;       // 620, sh biz index
 };
 struct Order
 {
-  char security_id[16];
-  std::uint16_t market;
-  std::int32_t date;
-  std::int32_t time;
-  std::uint8_t quote_type;
-  std::int8_t eq_tpc;                        // eqapi trading phase code
-  std::int64_t index;
-  std::int64_t price;
-  std::int64_t volume;
-  char side;
-  char type;
-  std::int32_t channel;
-  std::int64_t origin_no;                    // for sh, 原始订单号
-  std::int64_t biz_index;                    // for sh, biz index
+  char security_id[16];         // 0
+  std::uint16_t market;         // 1
+  std::int32_t date;            // 3
+  std::int32_t time;            // 4
+  std::uint8_t quote_type;      // 5
+  std::int8_t eq_tpc;           // 20, eqapi trading phase code
+  std::int64_t index;           // 700
+  std::int64_t price;           // 701
+  std::int64_t volume;          // 702
+  char side;                    // 703
+  char type;                    // 704
+  std::int32_t channel;         // 621
+  std::int64_t origin_no;       // 710, for sh, 原始订单号
+  std::int64_t biz_index;       // 620, for sh, biz index
 };
 
 struct Snapshot_L2
@@ -225,20 +225,20 @@ struct Snapshot_L2
 
 struct Kline
 {
-  char security_id[16];
-  std::uint16_t market;
-  std::int32_t date;
-  std::int32_t time;
-  std::uint8_t quote_type;
-  std::int64_t preclose;
-  std::int64_t open;
-  std::int64_t high;
-  std::int64_t low;
-  std::int64_t last;
-  std::int64_t numTrade;
-  std::int64_t volume;
-  std::int64_t value;
-  std::int64_t position;
+  char security_id[16];       // 0
+  std::uint16_t market;       // 1
+  std::int32_t date;          // 3
+  std::int32_t time;          // 4
+  std::uint8_t quote_type;    // 5
+  std::int64_t preclose;      // 100
+  std::int64_t open;          // 101
+  std::int64_t high;          // 102
+  std::int64_t low;           // 103
+  std::int64_t last;          // 104
+  std::int64_t numTrade;      // 112
+  std::int64_t volume;        // 113
+  std::int64_t value;         // 114
+  std::int64_t position;      // 129
 };
 ```
 
