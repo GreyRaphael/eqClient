@@ -116,3 +116,129 @@ trade aiquant
 - seq_num
 - ask_seq_num
 - bid_seq_num
+
+eqapi
+
+```cpp
+struct Trade
+{
+  char security_id[16];
+  std::uint16_t market;
+  std::int32_t date;
+  std::int32_t time;
+  std::uint8_t quote_type;
+  std::int8_t eq_tpc;                        // eqapi trading phase code
+  std::int64_t index;
+  std::int64_t price;
+  std::int64_t volume;
+  char bsFlag;
+  std::int64_t sellNo;
+  std::int64_t buyNo;
+  std::int16_t type;                          // 港股成交类型
+  std::int32_t channel;
+  std::int64_t biz_index;                     // sh biz index
+};
+struct Order
+{
+  char security_id[16];
+  std::uint16_t market;
+  std::int32_t date;
+  std::int32_t time;
+  std::uint8_t quote_type;
+  std::int8_t eq_tpc;                        // eqapi trading phase code
+  std::int64_t index;
+  std::int64_t price;
+  std::int64_t volume;
+  char side;
+  char type;
+  std::int32_t channel;
+  std::int64_t origin_no;                    // for sh, 原始订单号
+  std::int64_t biz_index;                    // for sh, biz index
+};
+
+struct Snapshot_L2
+{
+  char security_id[16];
+  std::uint16_t market;
+  std::int32_t date;
+  std::int32_t time;
+  std::uint8_t quote_type;
+  std::int8_t eq_tpc;                        // eqapi trading phase code
+  std::int64_t preclose;
+  std::int64_t open;
+  std::int64_t high;
+  std::int64_t low;
+  std::int64_t last;
+  std::int64_t close;
+  char instrument_status[8];
+  char tpc[8];
+  std::int64_t offer_price[10];
+  std::int64_t offer_volume[10];
+  std::int64_t offer_num_order[10];
+  std::int64_t bid_price[10];
+  std::int64_t bid_volume[10];
+  std::int64_t bid_num_order[10];
+  std::int64_t num_trades;
+  std::int64_t total_volume_trade;
+  std::int64_t total_value_trade;
+  std::int64_t total_offer_quant;
+  std::int64_t total_bid_quant;                   // 买入总量
+  std::int64_t weighted_avg_offer_price;
+  std::int64_t weighted_avg_bid_price;
+  std::int64_t altWeighted_avg_offer_price;
+  std::int64_t altWeighted_avg_bid_price;
+  std::int64_t num_offer_order;
+  std::int64_t num_bid_order;                     // 买方委托价位数
+  std::int64_t high_limited;
+  std::int64_t low_limited;
+  std::int64_t withdraw_sell_num;              //期权集中竞价交易熔断参考价格 （暂用）
+  std::int64_t withdraw_sell_amount;
+  std::int64_t withdraw_sell_money;              
+  std::int64_t withdraw_buy_num;       
+  std::int64_t withdraw_buy_amount;
+  std::int64_t withdraw_buy_money;
+  std::int64_t total_offer_num;
+  std::int64_t total_bid_num;                     // 买入总笔数
+  std::int64_t offer_trade_max_duration;
+  std::int64_t bid_trade_max_duration;
+  std::int64_t etf_buy_num;
+  std::int64_t etf_buy_amount;
+  std::int64_t etf_buy_money;
+  std::int64_t etf_sell_num;
+  std::int64_t etf_sell_amount;
+  std::int64_t etf_sell_money;
+  std::int64_t iopv;
+  std::int64_t nav;
+  std::int64_t position;
+  std::int64_t yield_to_maturity;
+  std::int64_t pratio1;
+  std::int64_t pratio2;
+  std::int64_t updown1;
+  std::int64_t updown2;
+  std::int64_t weighted_avg_price;                // 上交所债券加权平均回购利率  & 深交所债券现券交易成交量加权平均价
+  std::int64_t reserved2;                         // 匹配成交最新价
+  std::int64_t reserved3;                         // 匹配成交成交量
+  std::int64_t reserved4;                         // 匹配成交成交金额
+  std::int32_t offer_one_order[50];
+  std::int32_t bid_one_order[50];
+};
+
+struct Kline
+{
+  char security_id[16];
+  std::uint16_t market;
+  std::int32_t date;
+  std::int32_t time;
+  std::uint8_t quote_type;
+  std::int64_t preclose;
+  std::int64_t open;
+  std::int64_t high;
+  std::int64_t low;
+  std::int64_t last;
+  std::int64_t numTrade;
+  std::int64_t volume;
+  std::int64_t value;
+  std::int64_t position;
+};
+```
+
