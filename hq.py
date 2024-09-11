@@ -225,6 +225,7 @@ def download(secu_type: str, quote_type: str, target_dates: list[int]):
             "604": pl.Utf8,
             "605": pl.Int64,
             "606": pl.Int64,
+            "620": pl.Int64,  # for sh
         }
         name_mapping = {
             "0": "code",
@@ -236,6 +237,7 @@ def download(secu_type: str, quote_type: str, target_dates: list[int]):
             "604": "bs_flag",
             "605": "ask_seq_no",
             "606": "bid_seq_no",
+            "620": "sh_biz_index",  # for sh
         }
     elif quote_type == "order":
         eq_line = "l2:order"
@@ -249,7 +251,8 @@ def download(secu_type: str, quote_type: str, target_dates: list[int]):
             "702": pl.Int64,
             "703": pl.Utf8,
             "704": pl.Utf8,
-            "710": pl.Int64,
+            "710": pl.Int64,  # for sh
+            "620": pl.Int64,  # for sh
         }
         name_mapping = {
             "0": "code",
@@ -260,7 +263,8 @@ def download(secu_type: str, quote_type: str, target_dates: list[int]):
             "702": "volume",
             "703": "bs_flag",
             "704": "order_type",
-            "710": "orgin_seq_no",
+            "710": "orgin_seq_no",  # for sh
+            "620": "sh_biz_index",  # for sh
         }
     else:
         raise ValueError(f"unknown quote_type: {quote_type}")
