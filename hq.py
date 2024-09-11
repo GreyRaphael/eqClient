@@ -157,7 +157,7 @@ def download(secu_type: str, quote_type: str, target_dates: list[int]):
             "113": "volume",
             "114": "amount",
         }
-    else:
+    elif quote_type == "tick":
         eq_line = "l2:tick"
         qsize = 64
         schema = {
@@ -212,6 +212,58 @@ def download(secu_type: str, quote_type: str, target_dates: list[int]):
             "153": "ask_nums",
             "201": "iopv",
         }
+    elif quote_type == "trade":
+        eq_line = "l2:trade"
+        qsize = 64
+        schema = {
+            "0": pl.Utf8,
+            "3": pl.Int32,
+            "4": pl.Int32,
+            "600": pl.Int32,
+            "601": pl.Int32,
+            "602": pl.Int32,
+            "604": pl.Utf8,
+            "605": pl.Int32,
+            "606": pl.Int32,
+        }
+        name_mapping = {
+            "0": "code",
+            "3": "date",
+            "4": "time",
+            "600": "seq_no",
+            "601": "price",
+            "602": "volume",
+            "604": "bs_flag",
+            "605": "ask_seq_no",
+            "606": "bid_seq_no",
+        }
+    elif quote_type == "order":
+        eq_line = "l2:order"
+        qsize = 64
+        schema = {
+            "0": pl.Utf8,
+            "3": pl.Int32,
+            "4": pl.Int32,
+            "700": pl.Int32,
+            "701": pl.Int32,
+            "702": pl.Int32,
+            "703": pl.Utf8,
+            "704": pl.Utf8,
+            "710": pl.Int32,
+        }
+        name_mapping = {
+            "0": "code",
+            "3": "date",
+            "4": "time",
+            "700": "seq_no",
+            "701": "price",
+            "702": "volume",
+            "703": "bs_flag",
+            "704": "order_type",
+            "710": "orgin_seq_no",
+        }
+    else:
+        raise ValueError(f"unknown quote_type: {quote_type}")
 
     sh_codes, sz_codes = get_codes(secu_type)
     sh_line = f"sh{eq_line}:{sh_codes}"
@@ -274,7 +326,7 @@ if __name__ == "__main__":
     parser.add_argument("-dts", type=int, required=True, dest="date_start", help="start date, 20070101")
     parser.add_argument("-dte", type=int, required=True, dest="date_end", help="end date, 20241231")
     parser.add_argument("-st", type=str, required=True, dest="secu_type", choices=["stock", "etf"], help="security type")
-    parser.add_argument("-qt", type=str, required=True, dest="quote_type", choices=["tick", "kl1m"], help="quote type")
+    parser.add_argument("-qt", type=str, required=True, dest="quote_type", choices=["tick", "kl1m", "trade", "order"], help="quote type")
 
     args = parser.parse_args()
     process(args)
