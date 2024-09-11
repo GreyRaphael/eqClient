@@ -249,7 +249,7 @@ def download(secu_type: str, quote_type: str, target_dates: list[int]):
             "702": pl.Int64,
             "703": pl.Utf8,
             "704": pl.Utf8,
-            "710": pl.Int32,
+            "710": pl.Int64,
         }
         name_mapping = {
             "0": "code",
