@@ -275,6 +275,8 @@ def download(secu_type: str, quote_type: str, target_dates: list[int]):
     sz_line = f"sz{eq_line}:{sz_codes}"
     hq_logger.debug(f"quote line: {sz_line}")
 
+    start_time = 91500000 if quote_type in ["order", "trade"] else 92500000
+
     q = Queue(maxsize=qsize)
     hq_app = HistoryApp(q)
     threading.Thread(target=worker, args=(q, schema, name_mapping, out_dir), daemon=True).start()
@@ -286,7 +288,7 @@ def download(secu_type: str, quote_type: str, target_dates: list[int]):
         hq_app.get(
             line=sh_line,
             startDate=target_date,
-            startTime=92500000,
+            startTime=start_time,
             endDate=target_date,
             endTime=150100000,
             rate=-1,  # unsorted
@@ -296,7 +298,7 @@ def download(secu_type: str, quote_type: str, target_dates: list[int]):
         hq_app.get(
             line=sz_line,
             startDate=target_date,
-            startTime=92500000,
+            startTime=start_time,
             endDate=target_date,
             endTime=150100000,
             rate=-1,  # unsorted
