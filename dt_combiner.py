@@ -26,6 +26,11 @@ def combine_trade(target_date: int, in_dir: str, out_dir: str):
         .collect()
     )
 
+    final_dir = f"{out_dir}/{target_date // 10000}"
+    os.makedirs(final_dir, exist_ok=True)
+    out_file = f"{final_dir}/{target_date}.ipc"
+    df.write_ipc(out_file, compression="zstd")
+
 
 def combine_order(target_date: int, in_dir: str, out_dir: str):
     in_files = f"{in_dir}/{target_date}/*.parquet"
@@ -45,6 +50,10 @@ def combine_order(target_date: int, in_dir: str, out_dir: str):
         .sort(["code", "dt"])
         .collect()
     )
+    final_dir = f"{out_dir}/{target_date // 10000}"
+    os.makedirs(final_dir, exist_ok=True)
+    out_file = f"{final_dir}/{target_date}.ipc"
+    df.write_ipc(out_file, compression="zstd")
 
 
 def combine_tick(target_date: int, in_dir: str, out_dir: str):
@@ -164,7 +173,7 @@ if __name__ == "__main__":
     parser.add_argument("-dts", type=int, required=True, dest="dt_start", help="start date, 20070104")
     parser.add_argument("-dte", type=int, required=True, dest="dt_end", help="end date, 20240504")
     parser.add_argument("-st", type=str, required=True, dest="secu_type", choices=["stock", "etf"], help="security type")
-    parser.add_argument("-qt", type=str, required=True, dest="quote_type", choices=["tick", "kl1m"], help="quote type")
+    parser.add_argument("-qt", type=str, required=True, dest="quote_type", choices=["tick", "kl1m", "order", "trade"], help="quote type")
 
     args = parser.parse_args()
     process(args)
