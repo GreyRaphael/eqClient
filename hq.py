@@ -104,11 +104,19 @@ def get_codes(secu_type: str) -> tuple:
     if secu_type == "etf":
         with open("etf_list.json") as file:
             j_codes = json.load(file)
+        sh_etfs, sz_etfs = [], []
+        for raw_code in j_codes:
+            if raw_code.startswith("1"):
+                # sz starts with 159
+                sz_etfs.append(raw_code[:6])
+            elif raw_code.startswith("5"):
+                # sh starts with 5
+                sh_etfs.append(raw_code[:6])
 
         # sh_codes = "@510.*|@511.*|@512.*|@513.*|@515.*|@516.*|@517.*|@518.*|@520.*|@560.*|@561.*|@562.*|@563.*|@588.*"  # bad
         # sz_codes = "@159.*"  # bad
-        sh_codes = "|".join(j_codes["sh"])
-        sz_codes = "|".join(j_codes["sz"])
+        sh_codes = "|".join(sh_etfs)
+        sz_codes = "|".join(sz_etfs)
     else:
         sh_codes = "@60.*|@68.*"
         sz_codes = "@00.*|@30.*"

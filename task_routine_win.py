@@ -2,47 +2,6 @@ import datetime as dt
 import argparse
 import hq
 import dt_combiner
-from WindPy import w
-from utils import chatbot
-import json
-
-
-def wind_ready() -> bool:
-    # check wind connection 10 times
-    for _ in range(10):
-        w.start()
-        if w.isconnected():
-            return True
-    return False
-
-
-def get_etf_list(date_str: str) -> tuple:
-    # get all etf list(包含未上市和退市的)
-    sh_codes, sz_codes = [], []
-    response = w.wset("sectorconstituent", f"date={date_str};sectorid=1000051239000000;field=wind_code")
-    if response.ErrorCode == 0:
-        # response.Data likst [['159001.OF', '159003.OF', '561200.OF',]]
-        for raw_code in response.Data[0]:
-            if raw_code.startswith("1"):
-                # sz starts with 159
-                sz_codes.append(raw_code[:6])
-            elif raw_code.startswith("5"):
-                # sh starts with 5
-                sh_codes.append(raw_code[:6])
-        return sh_codes, sz_codes
-
-    else:
-        chatbot.send_msg(f"WindPy Errorcode: {response.ErrorCode} at {date_str}")
-        return [], []
-
-
-def write_etf_list(current_dt: dt.date | dt.datetime):
-    if wind_ready():
-        sh_codes, sz_codes = get_etf_list(current_dt.strftime("%Y-%m-%d"))
-        with open("etf_list.json", "w") as f:
-            json.dump({"sh": sh_codes, "sz": sz_codes}, f)
-    else:
-        chatbot.send_msg("WindPy not ready")
 
 
 def collect_trade_days(current_dt: dt.date | dt.datetime) -> list[int]:
@@ -54,7 +13,6 @@ def collect_trade_days(current_dt: dt.date | dt.datetime) -> list[int]:
 
 def job_worker(secu_type: str, quote_type: str):
     today = dt.date.today()
-    write_etf_list(today)
     target_dates = collect_trade_days(today)
     # download quotes
     hq.download(secu_type, quote_type, target_dates)

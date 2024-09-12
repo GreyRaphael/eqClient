@@ -28,7 +28,7 @@ def write_etf_list():
     today = dt.date.today()
     if wind_ready():
         etf_list = get_etf_list(today.strftime("%Y-%m-%d"))
-        with open("D:/etf_list.json", "w") as f:
+        with open("etf_list.json", "w") as f:
             json.dump(etf_list, f)
     else:
         chatbot.send_msg("WindPy not ready")
