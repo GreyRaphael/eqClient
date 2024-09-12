@@ -45,14 +45,14 @@ order sh
 - time √
 <!-- - quote_type -->
 <!-- - eq_trading_phase_code -->
-- biz_index ? always == order_index ?
+<!-- - biz_index ? always == order_index  -->
 <!-- - trade_order_channel -->
 - order_index √
 - order_price √
 - order_volume √
 - order_side √
 - order_type √
-- order_origin_no ?
+- order_origin_no √
 
 order sz
 - securityid √
@@ -90,7 +90,7 @@ trade sh
 - trade_bs_flag √
 - trade_sell_no √
 - trade_buy_no √
-- biz_index: ?
+<!-- - biz_index: always == trade_index  -->
 <!-- - trade_order_channel -->
 
 trade sz
