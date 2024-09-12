@@ -10,6 +10,8 @@ ORDER_TYPE_MAPPING = {"1": 1, "2": 2, "U": 3, "A": 4, "D": 5}
 
 def combine_trade(target_date: int, in_dir: str, out_dir: str):
     in_files = f"{in_dir}/{target_date}/*.parquet"
+    # sh trade bs_flag: B, S
+    # sz trade bs_flag: B, S, C
     df = (
         pl.scan_parquet(in_files)
         .select(
@@ -34,6 +36,10 @@ def combine_trade(target_date: int, in_dir: str, out_dir: str):
 
 def combine_order(target_date: int, in_dir: str, out_dir: str):
     in_files = f"{in_dir}/{target_date}/*.parquet"
+    # sh order bs_flag: B, S
+    # sz order bs_flag: B, S
+    # sh order order_type: 1, 2, U
+    # sz order order_type: A, D
     df = (
         pl.scan_parquet(in_files)
         .filter(pl.col("price").is_not_null())
