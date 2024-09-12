@@ -75,7 +75,7 @@ def process(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="history quotes downloader")
     parser.add_argument("-st", type=str, required=True, dest="secu_type", choices=["stock", "etf"], help="security type")
-    parser.add_argument("-qt", type=str, required=True, dest="quote_type", choices=["tick", "kl1m"], help="quote type")
+    parser.add_argument("-qt", type=str, required=True, dest="quote_type", choices=["tick", "kl1m", "order", "trade"], help="quote type")
 
     args = parser.parse_args()
     process(args)

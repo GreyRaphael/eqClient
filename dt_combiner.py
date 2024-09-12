@@ -138,8 +138,14 @@ def do_comine(secu_type: str, quote_type: str, target_dates: list[int]):
     out_dir = f"transfer/{secu_type}-{quote_type}"  # transfer/etf-tick/
     if quote_type == "kl1m":
         combiner = combine_kl1m
-    else:
+    elif quote_type == "tick":
         combiner = combine_tick
+    elif quote_type == "trade":
+        combiner = combine_trade
+    elif quote_type == "order":
+        combiner = combine_order
+    else:
+        raise ValueError(f"unknown quote_type: {quote_type}")
 
     for target_date in target_dates:
         if not os.path.exists(f"{in_dir}/{target_date}"):
