@@ -242,3 +242,14 @@ struct Kline
 };
 ```
 
+sz:
+- find `ask_seq_no` and `bid_seq_no` of **trade** in `seq_no` of **order**
+- in trade, buy volume > sell volume, flag = 1; sell volume > buy volume, flag = 2
+- order only have buy and sell, no cancel
+- cancel in trade data
+
+sh:
+- find `ask_seq_no` and `bid_seq_no` of **trade** in `origin_seq_no` of **order**
+- in trade, buy volume > sell volume, flag = 1; sell volume > buy volume, flag = 2
+- order have buy, sell, cancel
+- 立即撮合的order不会出现在order中，trade里面可以找到痕迹
