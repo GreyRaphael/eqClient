@@ -43,7 +43,7 @@ def gen_bar1m(target_date: int, minute_interval: int, in_dir: str, out_dir: str)
         dff.group_by_dynamic("dt", every="1m", period="1m", closed="left", label="right", group_by="code")
         .agg(
             [
-                pl.first("preclose").alias("preclose"),
+                pl.last("preclose").alias("preclose"),
                 pl.first("last").alias("open"),
                 pl.max("last").alias("high"),
                 pl.min("last").alias("low"),
@@ -55,9 +55,9 @@ def gen_bar1m(target_date: int, minute_interval: int, in_dir: str, out_dir: str)
         )
         .sort(by=["code", "dt"])
         .with_columns(
-            pl.col("volume").diff().over("code"),
-            pl.col("amount").diff().over("code"),
-            pl.col("num_trades").diff().over("code"),
+            pl.col("volume").diff().over("code", pl.col("dt").dt.date()),
+            pl.col("amount").diff().over("code", pl.col("dt").dt.date()),
+            pl.col("num_trades").diff().over("code", pl.col("dt").dt.date()),
         )
         .filter(pl.col("volume").is_not_null())
     )
@@ -93,16 +93,17 @@ def gen_bar1m(target_date: int, minute_interval: int, in_dir: str, out_dir: str)
     df_aligned_bar1m = (
         dft_base.join(df_bar1m, on=["code", "dt"], how="left")
         .with_columns(
-            pl.col("code").fill_null(strategy="forward").fill_null(strategy="backward").over("code"),
-            pl.col("close").fill_null(strategy="forward").fill_null(strategy="backward").over("code"),
-            pl.col("volume").fill_null(0).over("code"),
-            pl.col("amount").fill_null(0).over("code"),
-            pl.col("num_trades").fill_null(0).over("code"),
+            pl.col("code").fill_null(strategy="forward").fill_null(strategy="backward").over("code", pl.col("dt").dt.date()),
+            pl.col("close").fill_null(strategy="forward").fill_null(strategy="backward").over("code", pl.col("dt").dt.date()),
+            pl.col("preclose").fill_null(strategy="forward").over("code", pl.col("dt").dt.date()),
+            pl.col("volume").fill_null(0).over("code", pl.col("dt").dt.date()),
+            pl.col("amount").fill_null(0).over("code", pl.col("dt").dt.date()),
+            pl.col("num_trades").fill_null(0).over("code", pl.col("dt").dt.date()),
         )
         .with_columns(
-            pl.col("open").fill_null(pl.col("close")).over("code"),
-            pl.col("high").fill_null(pl.col("close")).over("code"),
-            pl.col("low").fill_null(pl.col("close")).over("code"),
+            pl.col("open").fill_null(pl.col("close")).over("code", pl.col("dt").dt.date()),
+            pl.col("high").fill_null(pl.col("close")).over("code", pl.col("dt").dt.date()),
+            pl.col("low").fill_null(pl.col("close")).over("code", pl.col("dt").dt.date()),
         )
     ).sort(by=["code", "dt"])
 
@@ -130,7 +131,7 @@ def gen_bar(target_date: int, minute_interval: int, in_dir: str, out_dir: str):
         .agg(
             [
                 pl.last("dt"),
-                pl.first("preclose"),
+                pl.last("preclose"),
                 pl.first("open"),
                 pl.max("high"),
                 pl.min("low"),
