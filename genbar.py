@@ -36,7 +36,7 @@ def gen_bar1m(target_date: int, minute_interval: int, in_dir: str, out_dir: str)
     )
 
     # concat the two dataframes
-    dff = pl.concat([df_first, df_body]).sort(by=["code", "dt"])
+    dff = pl.concat([df_first, df_body]).sort(by=["code", "dt"], maintain_order=True)  # maintain_order=True is important for multiple 14:59:59.999
     # group by 1 minute
 
     df_bar1m = (
@@ -53,7 +53,7 @@ def gen_bar1m(target_date: int, minute_interval: int, in_dir: str, out_dir: str)
                 pl.last("num_trades"),
             ]
         )
-        .sort(by=["code", "dt"])
+        .sort(by=["code", "dt"])  # maintain_order=True is not necessary as dt will not be the same
         .with_columns(
             pl.col("volume").diff().over("code"),  # for single target_dt, no need to over("code", pl.col('dt').dt.date())
             pl.col("amount").diff().over("code"),
@@ -123,10 +123,7 @@ def gen_bar(target_date: int, minute_interval: int, in_dir: str, out_dir: str):
         .with_columns(
             ((pl.cum_count("dt") - 1).over("code") // minute_interval).alias("count"),
         )
-        .group_by(
-            ["code", "count"],
-            maintain_order=True,
-        )
+        .group_by(["code", "count"])
         .agg(
             [
                 pl.last("dt"),
