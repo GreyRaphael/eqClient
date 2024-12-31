@@ -55,9 +55,9 @@ def gen_bar1m(target_date: int, minute_interval: int, in_dir: str, out_dir: str)
         )
         .sort(by=["code", "dt"])
         .with_columns(
-            pl.col("volume").diff().over("code", pl.col("dt").dt.date()),
-            pl.col("amount").diff().over("code", pl.col("dt").dt.date()),
-            pl.col("num_trades").diff().over("code", pl.col("dt").dt.date()),
+            pl.col("volume").diff().over("code"),  # for single target_dt, no need to over("code", pl.col('dt').dt.date())
+            pl.col("amount").diff().over("code"),
+            pl.col("num_trades").diff().over("code"),
         )
         .filter(pl.col("volume").is_not_null())
     )
@@ -89,21 +89,20 @@ def gen_bar1m(target_date: int, minute_interval: int, in_dir: str, out_dir: str)
     # Cartesian product of uniqute code x datetime
     dft_base = df.select(pl.col("code").unique()).join(dft, how="cross")
 
-    # df_bar1m aligned
+    # df_bar1m aligned for single date
     df_aligned_bar1m = (
         dft_base.join(df_bar1m, on=["code", "dt"], how="left")
         .with_columns(
-            pl.col("code").fill_null(strategy="forward").fill_null(strategy="backward").over("code", pl.col("dt").dt.date()),
-            pl.col("close").fill_null(strategy="forward").fill_null(strategy="backward").over("code", pl.col("dt").dt.date()),
-            pl.col("preclose").fill_null(strategy="forward").over("code", pl.col("dt").dt.date()),
-            pl.col("volume").fill_null(0).over("code", pl.col("dt").dt.date()),
-            pl.col("amount").fill_null(0).over("code", pl.col("dt").dt.date()),
-            pl.col("num_trades").fill_null(0).over("code", pl.col("dt").dt.date()),
+            pl.col("volume").fill_null(strategy="zero"),
+            pl.col("amount").fill_null(strategy="zero"),
+            pl.col("num_trades").fill_null(strategy="zero"),
+            pl.col("close").fill_null(strategy="forward").fill_null(strategy="backward").over("code"),
+            pl.col("preclose").fill_null(strategy="forward").fill_null(strategy="backward").over("code"),
         )
         .with_columns(
-            pl.col("open").fill_null(pl.col("close")).over("code", pl.col("dt").dt.date()),
-            pl.col("high").fill_null(pl.col("close")).over("code", pl.col("dt").dt.date()),
-            pl.col("low").fill_null(pl.col("close")).over("code", pl.col("dt").dt.date()),
+            pl.col("open").fill_null(pl.col("close")).over("code"),
+            pl.col("high").fill_null(pl.col("close")).over("code"),
+            pl.col("low").fill_null(pl.col("close")).over("code"),
         )
     ).sort(by=["code", "dt"])
 
