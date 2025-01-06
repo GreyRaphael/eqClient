@@ -8,7 +8,7 @@ import polars as pl
 def gen_bar1m(target_date: int, minute_interval: int, in_dir: str, out_dir: str):
     target_dt = dt.date(target_date // 10000, (target_date // 100) % 100, target_date % 100)
     in_file = target_dt.strftime(f"{in_dir}/%Y/%Y%m%d.ipc")  # etf-tick/2022/20220104.ipc
-    df = pl.read_ipc(in_file)  # read tick, df is sorted by [code, dt]
+    df = pl.read_ipc(in_file, memory_map=False)  # read tick, df is sorted by [code, dt]
 
     # duplicate the first row of each code to 8:00
     df_first = (
@@ -116,7 +116,7 @@ def gen_bar1m(target_date: int, minute_interval: int, in_dir: str, out_dir: str)
 def gen_bar(target_date: int, minute_interval: int, in_dir: str, out_dir: str):
     target_dt = dt.date(target_date // 10000, (target_date // 100) % 100, target_date % 100)
     in_file = target_dt.strftime(f"{in_dir}/%Y/%Y%m%d.ipc")  # etf-bar1m/2022/20220104.ipc
-    df_aligned_bar1m = pl.read_ipc(in_file)  # read bar1m, df is sorted by [code, dt]
+    df_aligned_bar1m = pl.read_ipc(in_file, memory_map=False)  # read bar1m, df is sorted by [code, dt]
 
     df_bar = (
         df_aligned_bar1m.filter(pl.col("dt").dt.time() > dt.time(9, 30))
