@@ -56,8 +56,8 @@ def gen_bar1m(target_date: int, minute_interval: int, in_dir: str, out_dir: str)
         .sort(by=["code", "dt"])  # maintain_order=True is not necessary as dt will not be the same
         .with_columns(
             pl.col("volume").diff().over("code"),  # for single target_dt, no need to over("code", pl.col('dt').dt.date())
-            pl.col("amount").diff().over("code") * 10000, # change amount value to 0.0001 Yuan
-            pl.col("num_trades").diff().over("code"),
+            pl.col("amount").diff().over("code") * 10000,  # change amount value to 0.0001 Yuan
+            pl.col("num_trades").diff().over("code").alias("trades_count"),
         )
         .filter(pl.col("volume").is_not_null())
     )
@@ -95,7 +95,7 @@ def gen_bar1m(target_date: int, minute_interval: int, in_dir: str, out_dir: str)
         .with_columns(
             pl.col("volume").fill_null(strategy="zero"),
             pl.col("amount").fill_null(strategy="zero"),
-            pl.col("num_trades").fill_null(strategy="zero"),
+            pl.col("trades_count").fill_null(strategy="zero"),
             pl.col("close").fill_null(strategy="forward").fill_null(strategy="backward").over("code"),
             pl.col("preclose").fill_null(strategy="forward").fill_null(strategy="backward").over("code"),
         )
@@ -134,7 +134,7 @@ def gen_bar(target_date: int, minute_interval: int, in_dir: str, out_dir: str):
                 pl.last("close"),
                 pl.sum("volume"),
                 pl.sum("amount"),
-                pl.sum("num_trades"),
+                pl.sum("trades_count"),
             ]
         )
         .select(pl.exclude("count"))
