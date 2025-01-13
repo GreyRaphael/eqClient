@@ -56,7 +56,7 @@ def gen_bar1m(target_date: int, minute_interval: int, in_dir: str, out_dir: str)
         .sort(by=["code", "dt"])  # maintain_order=True is not necessary as dt will not be the same
         .with_columns(
             pl.col("volume").diff().over("code"),  # for single target_dt, no need to over("code", pl.col('dt').dt.date())
-            pl.col("amount").diff().over("code"),
+            pl.col("amount").diff().over("code") * 10000, # change amount value to 0.0001 Yuan
             pl.col("num_trades").diff().over("code"),
         )
         .filter(pl.col("volume").is_not_null())
@@ -158,7 +158,7 @@ def do_convert(secu_type: str, minute_interval: int, target_dates: list[int]):
         converter = gen_bar
 
     for target_date in target_dates:
-        in_file = f"{in_dir}/{target_date//10000}/{target_date}.ipc"
+        in_file = f"{in_dir}/{target_date // 10000}/{target_date}.ipc"
         if not os.path.exists(in_file):
             print(f"{in_file} not exist")
             continue
