@@ -57,8 +57,9 @@ def gen_bar1m(target_date: int, minute_interval: int, in_dir: str, out_dir: str)
         .with_columns(
             pl.col("volume").diff().over("code").cast(pl.UInt64),  # for single target_dt, no need to over("code", pl.col('dt').dt.date())
             pl.col("amount").diff().over("code").cast(pl.UInt64) * 10000,  # change amount value to 0.0001 Yuan
-            pl.col("num_trades").diff().over("code").cast(pl.UInt32).alias("trades_count"),
+            pl.col("num_trades").diff().over("code").cast(pl.UInt32),
         )
+        .rename({"num_trades": "trades_count"})
         .filter(pl.col("volume").is_not_null())
     )
 
