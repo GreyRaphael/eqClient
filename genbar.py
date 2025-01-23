@@ -4,11 +4,42 @@ import argparse
 import json
 import polars as pl
 
+# remove 货币型
+excluded_list = [
+    159001,
+    159003,
+    159005,
+    511600,
+    511620,
+    511650,
+    511660,
+    511670,
+    511690,
+    511700,
+    511770,
+    511800,
+    511810,
+    511820,
+    511830,
+    511850,
+    511860,
+    511880,
+    511900,
+    511910,
+    511920,
+    511930,
+    511950,
+    511960,
+    511970,
+    511980,
+    511990,
+]
+
 
 def gen_bar1m(target_date: int, minute_interval: int, in_dir: str, out_dir: str):
     target_dt = dt.date(target_date // 10000, (target_date // 100) % 100, target_date % 100)
     in_file = target_dt.strftime(f"{in_dir}/%Y/%Y%m%d.ipc")  # etf-tick/2022/20220104.ipc
-    df = pl.read_ipc(in_file, memory_map=False)  # read tick, df is sorted by [code, dt]
+    df = pl.scan_ipc(in_file, memory_map=False).filter(~pl.col("code").is_in(excluded_list)).collect()  # read tick, df is sorted by [code, dt]
 
     # duplicate the first row of each code to 8:00
     df_first = (
